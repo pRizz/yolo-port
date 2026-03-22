@@ -1,0 +1,29 @@
+{
+  "name": "yolo-port",
+  "version": "0.1.0",
+  "description": "Lean port automation on top of get-shit-done.",
+  "type": "module",
+  "license": "MIT",
+  "bin": {
+    "yolo-port": "bin/yolo-port.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "scripts",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "typecheck": "bun x tsc --noEmit",
+    "test": "bun test",
+    "smoke:npm-pack-install": "bash scripts/smoke/npm-pack-install.sh"
+  },
+  "devDependencies": {
+    "@types/node": "^24.5.2",
+    "typescript": "^5.9.2"
+  }
+}
