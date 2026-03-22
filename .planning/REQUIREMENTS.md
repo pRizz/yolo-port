@@ -7,10 +7,10 @@
 
 ### Bootstrap
 
-- [ ] **BOOT-01**: User can install `yolo-port` via npm and launch the CLI successfully.
-- [ ] **BOOT-02**: User can let the bootstrap flow verify Bun availability and guide or perform Bun installation before Bun-dependent workflow steps run.
-- [ ] **BOOT-03**: User can let the bootstrap flow verify or install get-shit-done for Codex without manually understanding GSD internals.
-- [ ] **BOOT-04**: User can apply Bright Builds coding and architecture requirements to the target repository during onboarding.
+- [x] **BOOT-01**: User can install `yolo-port` via npm and launch the CLI successfully.
+- [x] **BOOT-02**: User can let the bootstrap flow verify Bun availability and guide or perform Bun installation before Bun-dependent workflow steps run.
+- [x] **BOOT-03**: User can let the bootstrap flow verify or install get-shit-done for Codex without manually understanding GSD internals.
+- [x] **BOOT-04**: User can apply Bright Builds coding and architecture requirements to the target repository during onboarding.
 
 ### Repository Intake
 
@@ -33,7 +33,7 @@
 
 ### Execution and Recovery
 
-- [ ] **EXEC-01**: User can bootstrap the `.planning` artifacts needed for a yolo-port managed port workflow.
+- [x] **EXEC-01**: User can bootstrap the `.planning` artifacts needed for a yolo-port managed port workflow.
 - [ ] **EXEC-02**: User can trigger a GSD-compatible execution flow after bootstrap instead of manually translating the plan into downstream GSD steps.
 - [ ] **EXEC-03**: User can rely on write-ahead and write-after checkpoint logging for each major workflow step.
 - [ ] **EXEC-04**: User can resume an interrupted run from the last reliable checkpoint after rerunning `yolo-port`.
@@ -74,10 +74,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| BOOT-01 | Phase 1 | Pending |
-| BOOT-02 | Phase 1 | Pending |
-| BOOT-03 | Phase 1 | Pending |
-| BOOT-04 | Phase 1 | Pending |
+| BOOT-01 | Phase 1 | Complete |
+| BOOT-02 | Phase 1 | Complete |
+| BOOT-03 | Phase 1 | Complete |
+| BOOT-04 | Phase 1 | Complete |
 | REPO-01 | Phase 2 | Pending |
 | REPO-02 | Phase 2 | Pending |
 | REPO-03 | Phase 3 | Pending |
@@ -88,7 +88,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PLAN-02 | Phase 3 | Pending |
 | PLAN-03 | Phase 3 | Pending |
 | PLAN-04 | Phase 3 | Pending |
-| EXEC-01 | Phase 1 | Pending |
+| EXEC-01 | Phase 1 | Complete |
 | EXEC-02 | Phase 4 | Pending |
 | EXEC-03 | Phase 4 | Pending |
 | EXEC-04 | Phase 4 | Pending |
@@ -103,4 +103,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-03-22*
-*Last updated: 2026-03-22 after roadmap traceability mapping*
+*Last updated: 2026-03-22 after Phase 1 completion*

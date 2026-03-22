@@ -5,37 +5,37 @@
 See: .planning/PROJECT.md (updated 2026-03-22)
 
 **Core value:** A developer can start a high-confidence port, see credible time and token cost estimates up front, walk away, and return to a resumable or completed result with 1:1 interface parity gaps clearly called out.
-**Current focus:** Phase 1: Bootstrap and Foundations
+**Current focus:** Phase 2: Repository Intake and Workflow Control
 
 ## Current Position
 
-Phase: 1 of 5 (Bootstrap and Foundations)
+Phase: 2 of 5 (Repository Intake and Workflow Control)
 Plan: 0 of 3 in current phase
-Status: Ready to plan
-Last activity: 2026-03-22 — Phase 1 context captured and ready for planning
+Status: Ready to discuss
+Last activity: 2026-03-22 — Phase 1 executed and verified
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [██░░░░░░░░] 20%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 0
-- Average duration: 0 min
-- Total execution time: 0.0 hours
+- Total plans completed: 3
+- Average duration: 35 min
+- Total execution time: 1.8 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 1 | 0 | 0 min | 0 min |
+| 1 | 3 | 105 min | 35 min |
 | 2 | 0 | 0 min | 0 min |
 | 3 | 0 | 0 min | 0 min |
 | 4 | 0 | 0 min | 0 min |
 | 5 | 0 | 0 min | 0 min |
 
 **Recent Trend:**
-- Last 5 plans: none yet
-- Trend: Stable
+- Last 5 plans: 01-01 (25 min), 01-02 (35 min), 01-03 (45 min)
+- Trend: Increasing integration complexity through the phase
 
 *Updated after each plan completion*
 
@@ -49,6 +49,8 @@ Recent decisions affecting current work:
 - Phase 0: Build yolo-port as an outer shell over get-shit-done
 - Phase 0: Make Bun-first and npm-installable the v1 delivery model
 - Phase 0: Treat 1:1 external parity as the default expectation, with rare exceptions flagged explicitly
+- Phase 1: Keep help/version on a Node-native launcher and hand Bun-managed commands off only after Bun is verified
+- Phase 1: Run Bright Builds before repo-local GSD mutation and write `.planning/yolo-port/` last
 
 ### Pending Todos
 
@@ -57,10 +59,11 @@ None yet.
 ### Blockers/Concerns
 
 - Pricing data should be refreshed from official provider sources before estimate logic is treated as production-ready.
-- GSD invocation and install assumptions should be verified against the current Codex path during implementation.
+- Automatic Bun installation currently supports Unix-like environments only; Windows needs a dedicated path later.
+- GSD installation currently ensures the repo is present in `CODEX_HOME`, while fuller Codex skill syncing remains future work.
 
 ## Session Continuity
 
-Last session: 2026-03-22 17:55
-Stopped at: Phase 1 context gathered
-Resume file: .planning/phases/01-bootstrap-and-foundations/01-CONTEXT.md
+Last session: 2026-03-22 23:43
+Stopped at: Phase 1 complete and verified
+Resume file: .planning/ROADMAP.md
