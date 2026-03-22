@@ -5,6 +5,7 @@ import { spawnSync } from "node:child_process";
 import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
+import { ensureBun } from "./lib/ensure-bun.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -54,16 +55,8 @@ function isVersionRequest(currentArgs) {
   return firstArg === "--version" || firstArg === "-v" || firstArg === "version";
 }
 
-function hasBun() {
-  const result = spawnSync("bun", ["--version"], {
-    stdio: "ignore"
-  });
-
-  return result.status === 0;
-}
-
-function runMain() {
-  const result = spawnSync("bun", [mainEntrypoint, ...args], {
+function runMain(bunPath) {
+  const result = spawnSync(bunPath, [mainEntrypoint, ...args], {
     cwd: process.cwd(),
     env: process.env,
     stdio: "inherit"
@@ -87,10 +80,12 @@ if (isVersionRequest(args)) {
   process.exit(0);
 }
 
-if (!hasBun()) {
-  console.error("Bun is required for this command.");
-  console.error("Run `yolo-port --help` for usage or install Bun before retrying.");
+const ensuredBun = await ensureBun({
+  assumeYes: args.includes("--yes") || args.includes("-y")
+});
+
+if (!ensuredBun.ok) {
   process.exit(1);
 }
 
-runMain();
+runMain(ensuredBun.bunPath);
