@@ -1,12 +1,18 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { spawn } from "node:child_process";
 
 import type { GsdToolState } from "../../domain/bootstrap/types.js";
 
 export type PlannedGsdAction = {
   kind: "install" | "none" | "update" | "verify";
   reason: string;
+};
+
+export type GsdActionResult = {
+  kind: PlannedGsdAction["kind"];
+  output: string;
 };
 
 function resolveCodexHome(env: NodeJS.ProcessEnv): string {
@@ -86,5 +92,106 @@ export function planGsdAction(detection: GsdToolState): PlannedGsdAction {
     reason: detection.version
       ? `Detected get-shit-done ${detection.version} in the active Codex home.`
       : "Detected get-shit-done in the active Codex home."
+  };
+}
+
+async function runProcess(
+  file: string,
+  args: string[],
+  env: NodeJS.ProcessEnv
+): Promise<{ code: number; output: string }> {
+  const child = spawn(file, args, {
+    env,
+    stdio: ["ignore", "pipe", "pipe"]
+  });
+
+  let output = "";
+  child.stdout.on("data", (chunk) => {
+    output += chunk.toString();
+  });
+  child.stderr.on("data", (chunk) => {
+    output += chunk.toString();
+  });
+
+  const code = await new Promise<number>((resolve, reject) => {
+    child.on("error", reject);
+    child.on("close", (value) => resolve(value ?? 1));
+  });
+
+  return {
+    code,
+    output
+  };
+}
+
+export async function runGsdAction(options: {
+  action: PlannedGsdAction;
+  detection: GsdToolState;
+  env?: NodeJS.ProcessEnv;
+}): Promise<GsdActionResult> {
+  const env = options.env ?? process.env;
+
+  if (options.action.kind === "none" || options.action.kind === "verify") {
+    return {
+      kind: options.action.kind,
+      output: options.action.reason
+    };
+  }
+
+  if (env.YOLO_PORT_GSD_INSTALLER && options.action.kind === "install") {
+    const result = await runProcess(env.YOLO_PORT_GSD_INSTALLER, [], env);
+    if (result.code !== 0) {
+      throw new Error(result.output.trim() || "Configured GSD installer failed.");
+    }
+
+    return {
+      kind: "install",
+      output: result.output
+    };
+  }
+
+  if (env.YOLO_PORT_GSD_UPDATER && options.action.kind === "update") {
+    const result = await runProcess(env.YOLO_PORT_GSD_UPDATER, [], env);
+    if (result.code !== 0) {
+      throw new Error(result.output.trim() || "Configured GSD updater failed.");
+    }
+
+    return {
+      kind: "update",
+      output: result.output
+    };
+  }
+
+  if (options.action.kind === "install") {
+    mkdirSync(path.dirname(options.detection.repoPath), { recursive: true });
+    const sourceRepo =
+      env.YOLO_PORT_GSD_SOURCE_REPO ?? "https://github.com/gsd-build/get-shit-done.git";
+    const result = await runProcess(
+      "git",
+      ["clone", "--depth", "1", sourceRepo, options.detection.repoPath],
+      env
+    );
+    if (result.code !== 0) {
+      throw new Error(result.output.trim() || "Failed to install get-shit-done.");
+    }
+
+    return {
+      kind: "install",
+      output: result.output
+    };
+  }
+
+  const result = await runProcess(
+    "git",
+    ["-C", options.detection.repoPath, "pull", "--ff-only"],
+    env
+  );
+  if (result.code !== 0) {
+    throw new Error(result.output.trim() || "Failed to update get-shit-done.");
+  }
+
+  return {
+    kind: "update",
+    output: result.output
   };
 }

@@ -37,6 +37,6 @@ INSTALLED_OUTPUT="$(
 )"
 
 grep -q "yolo-port ► Checks" <<<"${MISSING_OUTPUT}"
-grep -q "Defer get-shit-done installation" <<<"${MISSING_OUTPUT}"
+grep -q "Install get-shit-done for Codex" <<<"${MISSING_OUTPUT}"
 grep -q "Execution: dry-run" <<<"${MISSING_OUTPUT}"
 grep -q "Use the detected get-shit-done installation" <<<"${INSTALLED_OUTPUT}"
