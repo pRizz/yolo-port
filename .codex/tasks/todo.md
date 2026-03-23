@@ -17,3 +17,20 @@
 ## Completion Review
 
 - Residual risks: Pricing snapshots and exact GSD invocation details still need implementation-time validation in Phase 1-3 work.
+
+## Standards Audit And Fix Wave
+
+- [x] Audit repository standards hotspots and select a bounded remediation wave
+- [x] Extract pure bootstrap presentation helpers out of `src/cli/commands/bootstrap.ts`
+- [x] Add unit tests for the extracted bootstrap render helpers and existing untested `src/ui` pure helpers
+- [x] Run verification for the touched paths
+
+## Verification
+
+- [x] `bun x tsc --noEmit`
+- [x] `bun test`
+
+## Completion Review
+
+- Applied fixes: moved pure bootstrap render helpers into `src/ui/bootstrap.ts`, reduced `src/cli/commands/bootstrap.ts` below the Bright Builds file-length trigger, and added direct unit coverage for the UI render layer.
+- Residual risks: Larger standards gaps outside this wave still need follow-up audit passes, especially script rerun diagnostics/persisted logs and any deeper architecture simplifications outside `src/ui`.
