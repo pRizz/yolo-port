@@ -1,14 +1,9 @@
 import process from "node:process";
-import readline from "node:readline/promises";
 import path from "node:path";
 
 import { readIntakeProfile, writeIntakeProfile } from "../../adapters/fs/intakeProfile.js";
 import { readManagedRepoState } from "../../adapters/fs/managedRepo.js";
-import {
-  cloneRemoteRepository,
-  inspectLocalRepository,
-  inspectRemoteRepository
-} from "../../adapters/system/git.js";
+import { cloneRemoteRepository } from "../../adapters/system/git.js";
 import { detectBun } from "../../adapters/system/bun.js";
 import {
   readBrightBuildsStatus,
@@ -21,14 +16,8 @@ import {
   runGsdAction
 } from "../../adapters/system/gsd.js";
 import { mergeIntakePreferences } from "../../domain/intake/preferences.js";
-import type {
-  IntakeAnswers,
-  LocalRepositoryInspection,
-  RemoteRepositoryInspection
-} from "../../domain/intake/types.js";
 import { classifyRepoState } from "../../domain/intake/classifyRepoState.js";
 import { planBootstrap } from "../../domain/bootstrap/planBootstrap.js";
-import type { BootstrapMode } from "../../domain/bootstrap/types.js";
 import { createIntakeProfileRecord } from "../../persistence/intakeProfile.js";
 import { renderActionLog } from "../../ui/actionLog.js";
 import {
@@ -42,212 +31,23 @@ import { renderRepoClassification } from "../../ui/classification.js";
 import { writeSectionBanner } from "../../ui/progress.js";
 import { renderBrightBuildsBlockedRecovery } from "../../ui/recovery.js";
 import { renderBootstrapSummary } from "../../ui/summary.js";
+import {
+  collectBootstrapPreferenceAnswers,
+  confirmCloneIntoExistingDestination,
+  confirmDetectedRepoState,
+  confirmExecution,
+  confirmForce,
+  resolveMode
+} from "../bootstrap/interaction.js";
+import { resolveBootstrapTarget } from "../bootstrap/target.js";
 import { parseBootstrapArgs } from "../flags.js";
 import type { CommandDefinition } from "../router.js";
-
-async function resolveMode(
-  initialMode: BootstrapMode | null,
-  assumeYes: boolean,
-  input: NodeJS.ReadStream,
-  output: NodeJS.WriteStream
-): Promise<BootstrapMode> {
-  if (initialMode) {
-    return initialMode;
-  }
-
-  if (assumeYes || !input.isTTY || !output.isTTY) {
-    return "guided";
-  }
-
-  const prompt = readline.createInterface({
-    input,
-    output
-  });
-
-  const answer = await prompt.question(
-    "How involved do you want to be? [guided/standard/yolo] (guided): "
-  );
-  prompt.close();
-
-  const normalized = answer.trim().toLowerCase();
-  if (normalized === "standard" || normalized === "yolo") {
-    return normalized;
-  }
-
-  return "guided";
-}
-
-async function confirmExecution(
-  mode: BootstrapMode,
-  assumeYes: boolean,
-  input: NodeJS.ReadStream,
-  output: NodeJS.WriteStream
-): Promise<boolean> {
-  if (assumeYes || mode === "yolo") {
-    return true;
-  }
-
-  if (!input.isTTY || !output.isTTY) {
-    return false;
-  }
-
-  const prompt = readline.createInterface({
-    input,
-    output
-  });
-
-  const answer = await prompt.question("Proceed with the planned bootstrap actions? [Y/n] ");
-  prompt.close();
-
-  return answer.trim() === "" || answer.trim().toLowerCase() === "y";
-}
 
 function writeLines(output: NodeJS.WriteStream, lines: string[]): void {
   for (const line of lines) {
     output.write(`${line}\n`);
   }
 }
-
-async function promptText(
-  input: NodeJS.ReadStream,
-  output: NodeJS.WriteStream,
-  question: string
-): Promise<string | null> {
-  if (!input.isTTY || !output.isTTY) {
-    return null;
-  }
-
-  const prompt = readline.createInterface({
-    input,
-    output
-  });
-  const answer = await prompt.question(question);
-  prompt.close();
-
-  const trimmed = answer.trim();
-  return trimmed === "" ? null : trimmed;
-}
-
-async function promptBoolean(
-  input: NodeJS.ReadStream,
-  output: NodeJS.WriteStream,
-  question: string,
-  defaultValue: boolean
-): Promise<boolean> {
-  if (!input.isTTY || !output.isTTY) {
-    return defaultValue;
-  }
-
-  const prompt = readline.createInterface({
-    input,
-    output
-  });
-  const answer = await prompt.question(question);
-  prompt.close();
-
-  const normalized = answer.trim().toLowerCase();
-  if (normalized === "") {
-    return defaultValue;
-  }
-
-  return normalized === "y" || normalized === "yes";
-}
-
-async function confirmCloneIntoExistingDestination(
-  inspection: RemoteRepositoryInspection,
-  input: NodeJS.ReadStream,
-  output: NodeJS.WriteStream
-): Promise<boolean> {
-  if (inspection.existingPathKind === "missing") {
-    return true;
-  }
-
-  if (inspection.existingPathKind === "file") {
-    output.write(
-      `Clone destination exists as a file: ${inspection.cloneDestination}. Re-run with --dest to choose another path.\n`
-    );
-    return false;
-  }
-
-  if (inspection.existingPathKind === "non-empty-directory") {
-    output.write(
-      `Clone destination already exists and is not empty: ${inspection.cloneDestination}. Re-run with --dest to choose another path.\n`
-    );
-    return false;
-  }
-
-  if (!input.isTTY || !output.isTTY) {
-    output.write(
-      `Clone destination already exists: ${inspection.cloneDestination}. Re-run interactively or with --dest to confirm a different location.\n`
-    );
-    return false;
-  }
-
-  const prompt = readline.createInterface({
-    input,
-    output
-  });
-  const answer = await prompt.question(
-    `Clone destination already exists and is empty. Use ${inspection.cloneDestination}? [y/N] `
-  );
-  prompt.close();
-
-  return answer.trim().toLowerCase() === "y";
-}
-
-async function confirmForce(
-  input: NodeJS.ReadStream,
-  output: NodeJS.WriteStream
-): Promise<boolean> {
-  if (!input.isTTY || !output.isTTY) {
-    return false;
-  }
-
-  const prompt = readline.createInterface({
-    input,
-    output
-  });
-
-  const answer = await prompt.question(
-    "Bright Builds reported a blocked repo. Continue with --force replacement? [y/N] "
-  );
-  prompt.close();
-
-  return answer.trim().toLowerCase() === "y";
-}
-
-async function confirmDetectedRepoState(
-  state: string,
-  input: NodeJS.ReadStream,
-  output: NodeJS.WriteStream
-): Promise<boolean> {
-  if (!input.isTTY || !output.isTTY) {
-    output.write(
-      `Repository state needs confirmation before yolo-port continues. Re-run interactively to confirm the detected state (${state}).\n`
-    );
-    return false;
-  }
-
-  const prompt = readline.createInterface({
-    input,
-    output
-  });
-  const answer = await prompt.question(`Proceed using the detected state "${state}"? [Y/n] `);
-  prompt.close();
-
-  return answer.trim() === "" || answer.trim().toLowerCase() === "y";
-}
-
-type ResolvedBootstrapTarget =
-  | {
-      inspection: LocalRepositoryInspection;
-      kind: "local";
-      repoRoot: string;
-    }
-  | {
-      inspection: RemoteRepositoryInspection;
-      kind: "remote";
-    };
 
 export function createBootstrapCommand(): CommandDefinition {
   return {
@@ -263,26 +63,10 @@ export function createBootstrapCommand(): CommandDefinition {
         return 1;
       }
 
-      const resolvedTarget: ResolvedBootstrapTarget = flags.repoUrl
-        ? {
-            inspection: await inspectRemoteRepository({
-              cwd: context.cwd,
-              maybeCloneDestination: flags.cloneDestination,
-              repoUrl: flags.repoUrl
-            }),
-            kind: "remote"
-          }
-        : await (async () => {
-            const inspection = await inspectLocalRepository({
-              cwd: context.cwd
-            });
-
-            return {
-              inspection,
-              kind: "local" as const,
-              repoRoot: inspection.repoRoot ?? context.cwd
-            };
-          })();
+      const resolvedTarget = await resolveBootstrapTarget({
+        cwd: context.cwd,
+        flags
+      });
       const bunState = detectBun();
       const gsdState = detectGsd();
       const managedState =
@@ -340,9 +124,13 @@ export function createBootstrapCommand(): CommandDefinition {
 
       if (classification?.needsConfirmation) {
         const confirmedState = await confirmDetectedRepoState(
-          classification.recommendedState,
-          process.stdin,
-          context.stdout
+          {
+            io: {
+              input: process.stdin,
+              output: context.stdout
+            },
+            state: classification.recommendedState
+          }
         );
 
         if (!confirmedState) {
@@ -358,12 +146,14 @@ export function createBootstrapCommand(): CommandDefinition {
       }
 
       writeSectionBanner(context.stdout, "yolo-port ► Questions");
-      const mode = await resolveMode(
-        flags.maybeMode ?? savedProfile?.mode ?? null,
-        flags.assumeYes,
-        process.stdin,
-        context.stdout
-      );
+      const mode = await resolveMode({
+        assumeYes: flags.assumeYes,
+        initialMode: flags.maybeMode ?? savedProfile?.mode ?? null,
+        io: {
+          input: process.stdin,
+          output: context.stdout
+        }
+      });
       context.stdout.write(`Selected mode: ${mode}\n`);
       if (savedProfile) {
         context.stdout.write("Saved preferences were found and will be reused unless you override them.\n");
@@ -373,62 +163,16 @@ export function createBootstrapCommand(): CommandDefinition {
         context.stdout.write("Tip: you can switch to yolo later with --mode yolo.\n");
       }
 
-      const currentAnswers: Partial<IntakeAnswers> & {
-        maybeMode?: BootstrapMode | null;
-      } = {
-        maybeMode: mode,
-        tasteAnswers: {}
-      };
-
-      if (!flags.targetStack && !savedProfile?.targetStack && mode !== "yolo") {
-        currentAnswers.targetStack = await promptText(
-          process.stdin,
-          context.stdout,
-          "Target stack (optional, e.g. rust/axum): "
-        );
-      }
-
-      if (!flags.preferredAgent && !savedProfile?.preferredAgent && mode !== "yolo") {
-        currentAnswers.preferredAgent =
-          (await promptText(
-            process.stdin,
-            context.stdout,
-            "Preferred agent/provider (codex): "
-          )) ?? "codex";
-      }
-
-      if (flags.askTasteQuestions !== null) {
-        currentAnswers.askTasteQuestions = flags.askTasteQuestions;
-      } else if (savedProfile) {
-        currentAnswers.askTasteQuestions = savedProfile.askTasteQuestions;
-      } else if (mode === "yolo" || flags.assumeYes) {
-        currentAnswers.askTasteQuestions = false;
-      } else {
-        currentAnswers.askTasteQuestions = await promptBoolean(
-          process.stdin,
-          context.stdout,
-          "Answer a few design/taste questions now? [y/N] ",
-          false
-        );
-      }
-
-      if (currentAnswers.askTasteQuestions && mode !== "yolo") {
-        const profileAnswer = await promptText(
-          process.stdin,
-          context.stdout,
-          "Taste profile (defaults/strict/pragmatic) [defaults]: "
-        );
-        const notesAnswer = await promptText(
-          process.stdin,
-          context.stdout,
-          "Additional taste notes (optional): "
-        );
-
-        currentAnswers.tasteAnswers = {
-          ...(profileAnswer ? { profile: profileAnswer } : { profile: "defaults" }),
-          ...(notesAnswer ? { notes: notesAnswer } : {})
-        };
-      }
+      const currentAnswers = await collectBootstrapPreferenceAnswers({
+        assumeYes: flags.assumeYes,
+        flags,
+        io: {
+          input: process.stdin,
+          output: context.stdout
+        },
+        mode,
+        savedProfile
+      });
 
       const resolvedPreferences = mergeIntakePreferences({
         answers: currentAnswers,
@@ -476,12 +220,14 @@ export function createBootstrapCommand(): CommandDefinition {
         return 0;
       }
 
-      const approved = await confirmExecution(
-        mode,
-        flags.assumeYes,
-        process.stdin,
-        context.stdout
-      );
+      const approved = await confirmExecution({
+        assumeYes: flags.assumeYes,
+        io: {
+          input: process.stdin,
+          output: context.stdout
+        },
+        mode
+      });
 
       if (!approved) {
         context.stdout.write("Bootstrap stopped before execution.\n");
@@ -498,9 +244,13 @@ export function createBootstrapCommand(): CommandDefinition {
 
       if (resolvedTarget.kind === "remote") {
         const approvedDestination = await confirmCloneIntoExistingDestination(
-          resolvedTarget.inspection,
-          process.stdin,
-          context.stdout
+          {
+            inspection: resolvedTarget.inspection,
+            io: {
+              input: process.stdin,
+              output: context.stdout
+            }
+          }
         );
 
         if (!approvedDestination) {
@@ -522,7 +272,10 @@ export function createBootstrapCommand(): CommandDefinition {
       const gsdAction = planGsdAction(gsdState);
       let shouldForce = flags.forceBrightBuilds;
       if (brightBuildsStatus.repoState === "blocked" && !shouldForce) {
-        shouldForce = await confirmForce(process.stdin, context.stdout);
+        shouldForce = await confirmForce({
+          input: process.stdin,
+          output: context.stdout
+        });
       }
 
       if (brightBuildsStatus.repoState === "blocked" && !shouldForce) {

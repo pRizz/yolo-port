@@ -8,10 +8,15 @@ github_actions_name="github-actions[bot]"
 github_actions_email="41898282+github-actions[bot]@users.noreply.github.com"
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "${repo_root}/scripts/lib/run-logging.sh"
+init_run_logging "${repo_root}" "maintenance/bright-builds-auto-update"
+
 tmp_dir="$(mktemp -d "${TMPDIR:-/tmp}/bright-builds-auto-update.XXXXXX")"
 
 cleanup() {
+  local exit_code=$?
   rm -rf "$tmp_dir"
+  write_run_summary "$exit_code"
 }
 
 note() {
@@ -179,7 +184,11 @@ auto_update="$(extract_markdown_value "$audit_path" "Auto-update")"
 [[ -n "$source_url" ]] || die "missing source repository in ${audit_path}"
 [[ -n "$ref" ]] || die "missing version pin in ${audit_path}"
 
+append_run_summary_line "source repository: ${source_url}"
+append_run_summary_line "version pin: ${ref}"
+
 if [[ "$auto_update" != "enabled" ]]; then
+  append_run_summary_line "auto-update is disabled"
   note "Auto-update is disabled; nothing to do."
   exit 0
 fi
@@ -202,6 +211,8 @@ printf '%s\n' "$status_output"
 if [[ "$status_code" -ne 0 ]]; then
   die "status failed"
 fi
+
+append_run_summary_line "status completed for ${repo_root}"
 
 if [[ "$status_output" != *"Repo state: installed"* ]]; then
   die "auto-update requires the repo state to remain installed"
@@ -227,6 +238,7 @@ restore_audit_if_only_runtime_changed
 stage_managed_paths
 
 if git diff --cached --quiet --exit-code; then
+  append_run_summary_line "managed files already matched the pinned standards"
   note "No managed-file changes detected."
   exit 0
 fi
@@ -239,11 +251,13 @@ git config user.email "$github_actions_email"
 git commit -m "$commit_message" >/dev/null
 
 if git push origin HEAD:"${default_branch}" >/dev/null 2>&1; then
+  append_run_summary_line "pushed managed update directly to ${default_branch}"
   note "Pushed managed updates directly to ${default_branch}"
   exit 0
 fi
 
 note "Direct push to ${default_branch} failed; falling back to ${update_branch}"
+append_run_summary_line "direct push failed; pushed fallback branch ${update_branch}"
 
 git push --force-with-lease origin HEAD:"${update_branch}" >/dev/null
 create_or_reuse_pr "$default_branch"

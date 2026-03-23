@@ -2,13 +2,23 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "$0")/../.." && pwd)"
+source "${repo_root}/scripts/lib/run-logging.sh"
+init_run_logging "${repo_root}" "smoke/intake-entry"
+
 temp_dir="$(mktemp -d)"
-trap 'rm -rf "$temp_dir"' EXIT
+
+cleanup() {
+  local exit_code=$?
+  rm -rf "$temp_dir"
+  write_run_summary "$exit_code"
+}
+
+trap cleanup EXIT
 
 local_repo="$temp_dir/local-repo"
 mkdir -p "$local_repo"
 git -C "$local_repo" init >/dev/null 2>&1
-printf 'demo\n' > "$local_repo/README.md"
+printf 'demo\n' >"$local_repo/README.md"
 git -C "$local_repo" add README.md
 git -C "$local_repo" \
   -c user.name='Smoke Test' \
@@ -16,7 +26,7 @@ git -C "$local_repo" \
   commit -m 'init' >/dev/null 2>&1
 
 bright_builds_stub="$temp_dir/bright-builds-stub.sh"
-cat > "$bright_builds_stub" <<'EOF'
+cat >"$bright_builds_stub" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
 command="$1"
@@ -36,19 +46,22 @@ esac
 EOF
 chmod +x "$bright_builds_stub"
 
-(cd "$local_repo" && \
+(cd "$local_repo" &&
   CODEX_HOME="$temp_dir/.codex" \
-  YOLO_PORT_BRIGHT_BUILDS_SCRIPT="$bright_builds_stub" \
-  node "$repo_root/bin/yolo-port.js" --dry-run --mode yolo --yes >/dev/null)
+    YOLO_PORT_BRIGHT_BUILDS_SCRIPT="$bright_builds_stub" \
+    node "$repo_root/bin/yolo-port.js" --dry-run --mode yolo --yes >/dev/null)
 
 origin_repo="$temp_dir/origin.git"
 mkdir -p "$origin_repo"
 git -C "$origin_repo" init --bare >/dev/null 2>&1
 
-remote_output="$temp_dir/remote-output.txt"
-(cd "$temp_dir" && \
+remote_output="$(run_artifact_path "remote-output.txt")"
+(cd "$temp_dir" &&
   CODEX_HOME="$temp_dir/.codex-remote" \
-  node "$repo_root/bin/yolo-port.js" "file://$origin_repo" --dry-run --mode yolo --yes >"$remote_output")
+    node "$repo_root/bin/yolo-port.js" "file://$origin_repo" --dry-run --mode yolo --yes >"$remote_output")
 
 grep -q "Remote repository:" "$remote_output"
 test ! -e "$temp_dir/origin"
+
+append_run_summary_line "validated local repository intake entry path"
+append_run_summary_line "verified remote repository dry-run output at ${remote_output}"
