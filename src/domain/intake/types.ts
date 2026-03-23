@@ -39,6 +39,7 @@ export type RemoteRepositoryInspection = {
 export type RepoClassification = "already-ported" | "fresh" | "in-progress";
 
 export type RepoClassificationAction =
+  | "audit-parity"
   | "continue-bootstrap"
   | "inspect-managed-state"
   | "update-from-upstream"
