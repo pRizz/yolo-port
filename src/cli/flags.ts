@@ -1,15 +1,15 @@
 import type { BootstrapMode, Verbosity } from "../domain/bootstrap/types.js";
 
 export type ParsedBootstrapFlags = {
-  askTasteQuestions: boolean | null;
+  maybeAskTasteQuestions: boolean | null;
   assumeYes: boolean;
-  cloneDestination: string | null;
+  maybeCloneDestination: string | null;
   dryRun: boolean;
   forceBrightBuilds: boolean;
   maybeMode: BootstrapMode | null;
-  preferredAgent: string | null;
-  repoUrl: string | null;
-  targetStack: string | null;
+  maybePreferredAgent: string | null;
+  maybeRepoUrl: string | null;
+  maybeTargetStack: string | null;
   verbosity: Verbosity;
 };
 
@@ -22,12 +22,12 @@ function parseMode(value: string): BootstrapMode {
 }
 
 export function parseBootstrapArgs(argv: string[]): ParsedBootstrapFlags {
-  let askTasteQuestions: boolean | null = null;
+  let maybeAskTasteQuestions: boolean | null = null;
   let maybeMode: BootstrapMode | null = null;
-  let cloneDestination: string | null = null;
-  let preferredAgent: string | null = null;
-  let repoUrl: string | null = null;
-  let targetStack: string | null = null;
+  let maybeCloneDestination: string | null = null;
+  let maybePreferredAgent: string | null = null;
+  let maybeRepoUrl: string | null = null;
+  let maybeTargetStack: string | null = null;
   let verbosity: Verbosity = "normal";
   let assumeYes = false;
   let dryRun = false;
@@ -61,13 +61,13 @@ export function parseBootstrapArgs(argv: string[]): ParsedBootstrapFlags {
         throw new Error("Expected a value after --dest");
       }
 
-      cloneDestination = value;
+      maybeCloneDestination = value;
       index += 1;
       continue;
     }
 
     if (token.startsWith("--dest=")) {
-      cloneDestination = token.slice("--dest=".length);
+      maybeCloneDestination = token.slice("--dest=".length);
       continue;
     }
 
@@ -103,13 +103,13 @@ export function parseBootstrapArgs(argv: string[]): ParsedBootstrapFlags {
         throw new Error("Expected a value after --target-stack");
       }
 
-      targetStack = value;
+      maybeTargetStack = value;
       index += 1;
       continue;
     }
 
     if (token.startsWith("--target-stack=")) {
-      targetStack = token.slice("--target-stack=".length);
+      maybeTargetStack = token.slice("--target-stack=".length);
       continue;
     }
 
@@ -119,28 +119,28 @@ export function parseBootstrapArgs(argv: string[]): ParsedBootstrapFlags {
         throw new Error("Expected a value after --agent");
       }
 
-      preferredAgent = value;
+      maybePreferredAgent = value;
       index += 1;
       continue;
     }
 
     if (token.startsWith("--agent=")) {
-      preferredAgent = token.slice("--agent=".length);
+      maybePreferredAgent = token.slice("--agent=".length);
       continue;
     }
 
     if (token === "--ask-taste") {
-      askTasteQuestions = true;
+      maybeAskTasteQuestions = true;
       continue;
     }
 
     if (token === "--no-taste-questions") {
-      askTasteQuestions = false;
+      maybeAskTasteQuestions = false;
       continue;
     }
 
-    if (!token.startsWith("-") && repoUrl === null) {
-      repoUrl = token;
+    if (!token.startsWith("-") && maybeRepoUrl === null) {
+      maybeRepoUrl = token;
       continue;
     }
 
@@ -148,15 +148,15 @@ export function parseBootstrapArgs(argv: string[]): ParsedBootstrapFlags {
   }
 
   return {
-    askTasteQuestions,
+    maybeAskTasteQuestions,
     assumeYes,
-    cloneDestination,
+    maybeCloneDestination,
     dryRun,
     forceBrightBuilds,
     maybeMode,
-    preferredAgent,
-    repoUrl,
-    targetStack,
+    maybePreferredAgent,
+    maybeRepoUrl,
+    maybeTargetStack,
     verbosity
   };
 }

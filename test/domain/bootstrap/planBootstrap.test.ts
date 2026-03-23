@@ -22,8 +22,8 @@ function createInput(overrides: Partial<BootstrapPlanningInput> = {}): Bootstrap
       assumeYes: false,
       dryRun: false,
       forceBrightBuilds: false,
+      maybeRepoUrl: null,
       mode: "guided",
-      repoUrl: null,
       verbosity: "normal"
     },
     ...overrides
@@ -68,8 +68,8 @@ describe("planBootstrap", () => {
         assumeYes: false,
         dryRun: false,
         forceBrightBuilds: false,
+        maybeRepoUrl: null,
         mode: "guided",
-        repoUrl: null,
         verbosity: "normal"
       }
     });
@@ -97,8 +97,8 @@ describe("planBootstrap", () => {
         assumeYes: true,
         dryRun: false,
         forceBrightBuilds: false,
+        maybeRepoUrl: "https://github.com/example/service",
         mode: "yolo",
-        repoUrl: "https://github.com/example/service",
         verbosity: "verbose"
       }
     });

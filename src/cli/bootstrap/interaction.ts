@@ -5,7 +5,7 @@ import type { IntakeProfileRecord } from "../../persistence/intakeProfile.js";
 import type { BootstrapMode } from "../../domain/bootstrap/types.js";
 import type { IntakeAnswers, RemoteRepositoryInspection } from "../../domain/intake/types.js";
 
-type PromptIO = {
+export type PromptIO = {
   input: NodeJS.ReadStream;
   output: NodeJS.WriteStream;
 };
@@ -184,14 +184,22 @@ export async function collectBootstrapPreferenceAnswers(input: {
     tasteAnswers: {}
   };
 
-  if (!input.flags.targetStack && !input.savedProfile?.targetStack && input.mode !== "yolo") {
+  if (
+    !input.flags.maybeTargetStack &&
+    !input.savedProfile?.targetStack &&
+    input.mode !== "yolo"
+  ) {
     currentAnswers.targetStack = await promptText(
       input.io,
       "Target stack (optional, e.g. rust/axum): "
     );
   }
 
-  if (!input.flags.preferredAgent && !input.savedProfile?.preferredAgent && input.mode !== "yolo") {
+  if (
+    !input.flags.maybePreferredAgent &&
+    !input.savedProfile?.preferredAgent &&
+    input.mode !== "yolo"
+  ) {
     currentAnswers.preferredAgent =
       (await promptText(
         input.io,
@@ -199,8 +207,8 @@ export async function collectBootstrapPreferenceAnswers(input: {
       )) ?? "codex";
   }
 
-  if (input.flags.askTasteQuestions !== null) {
-    currentAnswers.askTasteQuestions = input.flags.askTasteQuestions;
+  if (input.flags.maybeAskTasteQuestions !== null) {
+    currentAnswers.askTasteQuestions = input.flags.maybeAskTasteQuestions;
   } else if (input.savedProfile) {
     currentAnswers.askTasteQuestions = input.savedProfile.askTasteQuestions;
   } else if (input.mode === "yolo" || input.assumeYes) {

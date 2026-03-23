@@ -31,8 +31,8 @@ export type BootstrapIntent = {
   assumeYes: boolean;
   dryRun: boolean;
   forceBrightBuilds: boolean;
+  maybeRepoUrl: string | null;
   mode: BootstrapMode;
-  repoUrl: string | null;
   verbosity: Verbosity;
 };
 

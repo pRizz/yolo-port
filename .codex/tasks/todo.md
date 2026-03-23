@@ -59,3 +59,43 @@
 
 - Applied fixes: added `.codex/run-logs/` as the repo-defined diagnostics location, introduced `scripts/lib/run-logging.sh`, persisted smoke-script outputs and summaries under that path, documented the location in `AGENTS.md`, and reduced `src/cli/commands/bootstrap.ts` further by extracting `src/cli/bootstrap/interaction.ts` and `src/cli/bootstrap/target.ts`.
 - Residual risks: the main remaining Bright Builds `should` gap is deeper simplification opportunities inside the bootstrap execution path now that interaction and target resolution are separated.
+
+## Standards Audit And Fix Wave 3
+
+- [x] Add direct unit coverage for the pure bootstrap flag parser
+- [x] Extract the remaining bootstrap execute-phase orchestration out of `src/cli/commands/bootstrap.ts`
+- [x] Keep the touched bootstrap and intake coverage green after the extraction
+
+## Verification
+
+- [x] `bun x tsc --noEmit`
+- [x] `bun test`
+- [x] `bash scripts/smoke/bootstrap-managed-repo.sh`
+- [x] `bash scripts/smoke/bootstrap-tools.sh`
+- [x] `bash scripts/smoke/intake-entry.sh`
+- [x] `bash scripts/smoke/intake-preferences.sh`
+
+## Completion Review
+
+- Applied fixes: added direct unit tests for `parseBootstrapArgs`, introduced `src/cli/bootstrap/execute.ts`, and reduced `src/cli/commands/bootstrap.ts` to a smaller orchestration shell.
+- Residual risks: the clearest remaining Bright Builds `should` gap is the broader nullable-name cleanup for internal TS surfaces that still use nullable fields without a `maybe` prefix.
+
+## Standards Audit And Fix Wave 4
+
+- [x] Rename nullable bootstrap and intake ingress fields to use `maybe*` prefixes
+- [x] Propagate the ingress rename through the immediate planning and preference-merging call sites
+- [x] Re-run the affected bootstrap and intake verification coverage
+
+## Verification
+
+- [x] `bun x tsc --noEmit`
+- [x] `bun test`
+- [x] `bash scripts/smoke/bootstrap-managed-repo.sh`
+- [x] `bash scripts/smoke/bootstrap-tools.sh`
+- [x] `bash scripts/smoke/intake-entry.sh`
+- [x] `bash scripts/smoke/intake-preferences.sh`
+
+## Completion Review
+
+- Applied fixes: renamed the nullable bootstrap flag fields and adjacent intake/planning ingress fields to `maybe*`, updated the merge and target-resolution path to use those names consistently, and removed the now-unused `bunState` parameter from `executeBootstrap`.
+- Residual risks: nullable naming is still broader than this bounded ingress wave, especially in resolved preference, profile, and UI-facing internal types that intentionally stayed stable for now.

@@ -9,8 +9,8 @@ export type ResolvedIntakePreferences = IntakeAnswers & {
 };
 
 export function inferTasteDefaults(input: {
-  preferredAgent: string | null;
-  targetStack: string | null;
+  maybePreferredAgent: string | null;
+  maybeTargetStack: string | null;
   tasteAnswers: Record<string, string>;
 }): string[] {
   const notes = [
@@ -18,12 +18,12 @@ export function inferTasteDefaults(input: {
     "Prefer transparent, pragmatic automation over black-box behavior."
   ];
 
-  if (input.targetStack) {
-    notes.push(`Bias toward the selected target stack: ${input.targetStack}.`);
+  if (input.maybeTargetStack) {
+    notes.push(`Bias toward the selected target stack: ${input.maybeTargetStack}.`);
   }
 
-  if (input.preferredAgent) {
-    notes.push(`Prefer workflows that fit ${input.preferredAgent}.`);
+  if (input.maybePreferredAgent) {
+    notes.push(`Prefer workflows that fit ${input.maybePreferredAgent}.`);
   }
 
   if (input.tasteAnswers.profile) {
@@ -48,34 +48,38 @@ export function mergeIntakePreferences(input: IntakePreferenceInput & {
   sourceRepo: string | null;
 }): ResolvedIntakePreferences {
   const mode = input.flags.maybeMode ?? input.answers.maybeMode ?? input.savedProfile?.mode ?? "guided";
-  const targetStack =
-    input.flags.targetStack ?? input.answers.targetStack ?? input.savedProfile?.targetStack ?? null;
-  const preferredAgent =
-    input.flags.preferredAgent ??
+  const maybeTargetStack =
+    input.flags.maybeTargetStack ??
+    input.answers.targetStack ??
+    input.savedProfile?.targetStack ??
+    null;
+  const maybePreferredAgent =
+    input.flags.maybePreferredAgent ??
     input.answers.preferredAgent ??
     input.savedProfile?.preferredAgent ??
     "codex";
   const askTasteQuestions =
-    input.flags.askTasteQuestions ??
+    input.flags.maybeAskTasteQuestions ??
     input.answers.askTasteQuestions ??
     input.savedProfile?.askTasteQuestions ??
     false;
   const tasteAnswers = mergeTasteAnswers(input.savedProfile, input.answers);
-  const cloneDestination =
-    input.flags.cloneDestination ?? input.savedProfile?.cloneDestination ?? null;
-  const sourceRepo = input.flags.repoUrl ?? input.sourceRepo ?? input.savedProfile?.sourceRepo ?? null;
+  const maybeCloneDestination =
+    input.flags.maybeCloneDestination ?? input.savedProfile?.cloneDestination ?? null;
+  const maybeSourceRepo =
+    input.flags.maybeRepoUrl ?? input.sourceRepo ?? input.savedProfile?.sourceRepo ?? null;
 
   return {
     askTasteQuestions,
-    cloneDestination,
+    cloneDestination: maybeCloneDestination,
     mode,
-    preferredAgent,
-    sourceRepo,
-    targetStack,
+    preferredAgent: maybePreferredAgent,
+    sourceRepo: maybeSourceRepo,
+    targetStack: maybeTargetStack,
     tasteAnswers,
     tasteDefaults: inferTasteDefaults({
-      preferredAgent,
-      targetStack,
+      maybePreferredAgent,
+      maybeTargetStack,
       tasteAnswers
     })
   };

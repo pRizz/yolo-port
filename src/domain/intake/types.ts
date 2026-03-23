@@ -66,11 +66,11 @@ export type IntakePreferenceInput = {
     maybeMode?: BootstrapMode | null;
   };
   flags: {
-    askTasteQuestions: boolean | null;
-    cloneDestination: string | null;
-    preferredAgent: string | null;
-    repoUrl: string | null;
-    targetStack: string | null;
+    maybeAskTasteQuestions: boolean | null;
+    maybeCloneDestination: string | null;
+    maybePreferredAgent: string | null;
+    maybeRepoUrl: string | null;
+    maybeTargetStack: string | null;
     verbosity: Verbosity;
   } & {
     maybeMode: BootstrapMode | null;

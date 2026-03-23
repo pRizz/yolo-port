@@ -20,12 +20,12 @@ export async function resolveBootstrapTarget(input: {
   cwd: string;
   flags: ParsedBootstrapFlags;
 }): Promise<ResolvedBootstrapTarget> {
-  if (input.flags.repoUrl) {
+  if (input.flags.maybeRepoUrl) {
     return {
       inspection: await inspectRemoteRepository({
         cwd: input.cwd,
-        maybeCloneDestination: input.flags.cloneDestination,
-        repoUrl: input.flags.repoUrl
+        maybeCloneDestination: input.flags.maybeCloneDestination,
+        repoUrl: input.flags.maybeRepoUrl
       }),
       kind: "remote"
     };

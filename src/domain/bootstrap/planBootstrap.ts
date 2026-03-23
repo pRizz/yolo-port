@@ -150,8 +150,8 @@ export function planBootstrap(input: BootstrapPlanningInput): BootstrapPlan {
   };
 
   return {
-    nextCommand: input.intent.repoUrl
-      ? `yolo-port bootstrap ${input.intent.repoUrl}`
+    nextCommand: input.intent.maybeRepoUrl
+      ? `yolo-port bootstrap ${input.intent.maybeRepoUrl}`
       : "yolo-port bootstrap",
     steps: [checks, questions, summary, execute],
     summaryLines: [

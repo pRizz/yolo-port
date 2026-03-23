@@ -19,12 +19,12 @@ describe("mergeIntakePreferences", () => {
         }
       },
       flags: {
-        askTasteQuestions: true,
-        cloneDestination: "./override",
+        maybeAskTasteQuestions: true,
+        maybeCloneDestination: "./override",
         maybeMode: "yolo",
-        preferredAgent: "codex",
-        repoUrl: "https://github.com/example/service",
-        targetStack: "rust/axum",
+        maybePreferredAgent: "codex",
+        maybeRepoUrl: "https://github.com/example/service",
+        maybeTargetStack: "rust/axum",
         verbosity: "normal"
       },
       savedProfile: {
@@ -62,8 +62,8 @@ describe("inferTasteDefaults", () => {
   test("includes Bright Builds bias and current stack context", () => {
     // Act
     const defaults = inferTasteDefaults({
-      preferredAgent: "codex",
-      targetStack: "rust/axum",
+      maybePreferredAgent: "codex",
+      maybeTargetStack: "rust/axum",
       tasteAnswers: {
         profile: "strict"
       }
