@@ -144,7 +144,15 @@ export function createBootstrapCommand(): CommandDefinition {
       context.stdout.write(`Selected mode: ${mode}\n`);
       if (savedProfile) {
         context.stdout.write("Saved preferences were found and will be reused unless you override them.\n");
-        writeLines(context.stdout, renderSavedPreferenceSummary(savedProfile));
+        writeLines(
+          context.stdout,
+          renderSavedPreferenceSummary({
+            askTasteQuestions: savedProfile.askTasteQuestions,
+            maybePreferredAgent: savedProfile.preferredAgent,
+            maybeTargetStack: savedProfile.targetStack,
+            mode: savedProfile.mode
+          })
+        );
       }
       if (mode !== "yolo") {
         context.stdout.write("Tip: you can switch to yolo later with --mode yolo.\n");
@@ -164,11 +172,11 @@ export function createBootstrapCommand(): CommandDefinition {
       const resolvedPreferences = mergeIntakePreferences({
         answers: currentAnswers,
         flags,
-        savedProfile,
-        sourceRepo:
+        maybeSourceRepo:
           resolvedTarget.kind === "remote"
             ? resolvedTarget.inspection.normalizedUrl
-            : resolvedTarget.repoRoot
+            : resolvedTarget.repoRoot,
+        savedProfile,
       });
 
       const plan = planBootstrap({

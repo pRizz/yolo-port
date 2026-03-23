@@ -141,14 +141,14 @@ export async function executeBootstrap(input: {
   const intakeProfilePath = await writeIntakeProfile({
     profile: createIntakeProfileRecord({
       askTasteQuestions: input.resolvedPreferences.askTasteQuestions,
-      cloneDestination:
+      maybeCloneDestination:
         input.resolvedTarget.kind === "remote"
           ? input.resolvedTarget.inspection.cloneDestination
-          : input.resolvedPreferences.cloneDestination,
+          : input.resolvedPreferences.maybeCloneDestination,
       mode: input.resolvedPreferences.mode,
-      preferredAgent: input.resolvedPreferences.preferredAgent,
-      sourceRepo: input.resolvedPreferences.sourceRepo,
-      targetStack: input.resolvedPreferences.targetStack,
+      maybePreferredAgent: input.resolvedPreferences.maybePreferredAgent,
+      maybeSourceRepo: input.resolvedPreferences.maybeSourceRepo,
+      maybeTargetStack: input.resolvedPreferences.maybeTargetStack,
       tasteAnswers: input.resolvedPreferences.tasteAnswers,
       tasteDefaults: input.resolvedPreferences.tasteDefaults,
       updatedAt

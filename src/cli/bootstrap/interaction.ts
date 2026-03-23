@@ -189,7 +189,7 @@ export async function collectBootstrapPreferenceAnswers(input: {
     !input.savedProfile?.targetStack &&
     input.mode !== "yolo"
   ) {
-    currentAnswers.targetStack = await promptText(
+    currentAnswers.maybeTargetStack = await promptText(
       input.io,
       "Target stack (optional, e.g. rust/axum): "
     );
@@ -200,7 +200,7 @@ export async function collectBootstrapPreferenceAnswers(input: {
     !input.savedProfile?.preferredAgent &&
     input.mode !== "yolo"
   ) {
-    currentAnswers.preferredAgent =
+    currentAnswers.maybePreferredAgent =
       (await promptText(
         input.io,
         "Preferred agent/provider (codex): "

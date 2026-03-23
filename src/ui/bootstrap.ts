@@ -6,6 +6,20 @@ import type {
 } from "../domain/intake/types.js";
 import type { BootstrapMode } from "../domain/bootstrap/types.js";
 
+export type SavedPreferenceSummary = {
+  askTasteQuestions: boolean;
+  maybePreferredAgent: string | null;
+  maybeTargetStack: string | null;
+  mode: BootstrapMode;
+};
+
+export type ResolvedPreferenceSummary = {
+  askTasteQuestions: boolean;
+  maybePreferredAgent: string | null;
+  maybeTargetStack: string | null;
+  tasteDefaults: string[];
+};
+
 export function renderLocalRepositoryChecks(inspection: LocalRepositoryInspection): string[] {
   if (!inspection.isGitRepo) {
     return ["Repository: current directory is not a git repo; bootstrap will use this directory."];
@@ -59,29 +73,19 @@ export function renderDirtyRepositoryRecovery(inspection: LocalRepositoryInspect
   return lines;
 }
 
-export function renderSavedPreferenceSummary(profile: {
-  askTasteQuestions: boolean;
-  mode: BootstrapMode;
-  preferredAgent: string | null;
-  targetStack: string | null;
-}): string[] {
+export function renderSavedPreferenceSummary(profile: SavedPreferenceSummary): string[] {
   return [
     `Mode: ${profile.mode}`,
-    `Target stack: ${profile.targetStack ?? "not set"}`,
-    `Preferred agent: ${profile.preferredAgent ?? "codex"}`,
+    `Target stack: ${profile.maybeTargetStack ?? "not set"}`,
+    `Preferred agent: ${profile.maybePreferredAgent ?? "codex"}`,
     `Taste questions: ${profile.askTasteQuestions ? "saved answers/defaults enabled" : "inferred defaults"}`
   ];
 }
 
-export function renderResolvedPreferenceSummary(profile: {
-  askTasteQuestions: boolean;
-  preferredAgent: string | null;
-  targetStack: string | null;
-  tasteDefaults: string[];
-}): string[] {
+export function renderResolvedPreferenceSummary(profile: ResolvedPreferenceSummary): string[] {
   const lines = [
-    `Target stack: ${profile.targetStack ?? "not set"}`,
-    `Preferred agent: ${profile.preferredAgent ?? "codex"}`,
+    `Target stack: ${profile.maybeTargetStack ?? "not set"}`,
+    `Preferred agent: ${profile.maybePreferredAgent ?? "codex"}`,
     `Taste handling: ${profile.askTasteQuestions ? "custom answers allowed" : "Bright Builds-aligned defaults"}`
   ];
 

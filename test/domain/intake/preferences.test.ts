@@ -12,8 +12,8 @@ describe("mergeIntakePreferences", () => {
       answers: {
         askTasteQuestions: false,
         maybeMode: "standard",
-        preferredAgent: "saved-agent",
-        targetStack: "zig/http",
+        maybePreferredAgent: "saved-agent",
+        maybeTargetStack: "zig/http",
         tasteAnswers: {
           profile: "pragmatic"
         }
@@ -41,16 +41,16 @@ describe("mergeIntakePreferences", () => {
         tasteDefaults: [],
         updatedAt: "2026-03-22T00:00:00.000Z"
       },
-      sourceRepo: "/tmp/repo"
+      maybeSourceRepo: "/tmp/repo"
     });
 
     // Assert
     expect(merged.mode).toBe("yolo");
-    expect(merged.targetStack).toBe("rust/axum");
-    expect(merged.preferredAgent).toBe("codex");
-    expect(merged.cloneDestination).toBe("./override");
+    expect(merged.maybeTargetStack).toBe("rust/axum");
+    expect(merged.maybePreferredAgent).toBe("codex");
+    expect(merged.maybeCloneDestination).toBe("./override");
     expect(merged.askTasteQuestions).toBe(true);
-    expect(merged.sourceRepo).toBe("https://github.com/example/service");
+    expect(merged.maybeSourceRepo).toBe("https://github.com/example/service");
     expect(merged.tasteAnswers).toEqual({
       notes: "saved",
       profile: "pragmatic"

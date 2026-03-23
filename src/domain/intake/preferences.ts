@@ -1,10 +1,14 @@
 import type { IntakeProfileRecord } from "../../persistence/intakeProfile.js";
 import type { IntakeAnswers, IntakePreferenceInput } from "./types.js";
 
-export type ResolvedIntakePreferences = IntakeAnswers & {
-  cloneDestination: string | null;
+export type ResolvedIntakePreferences = {
+  askTasteQuestions: boolean;
+  maybeCloneDestination: string | null;
   mode: NonNullable<IntakePreferenceInput["answers"]["maybeMode"]>;
-  sourceRepo: string | null;
+  maybePreferredAgent: string | null;
+  maybeSourceRepo: string | null;
+  maybeTargetStack: string | null;
+  tasteAnswers: Record<string, string>;
   tasteDefaults: string[];
 };
 
@@ -44,18 +48,18 @@ function mergeTasteAnswers(
 }
 
 export function mergeIntakePreferences(input: IntakePreferenceInput & {
+  maybeSourceRepo: string | null;
   savedProfile: IntakeProfileRecord | null;
-  sourceRepo: string | null;
 }): ResolvedIntakePreferences {
   const mode = input.flags.maybeMode ?? input.answers.maybeMode ?? input.savedProfile?.mode ?? "guided";
   const maybeTargetStack =
     input.flags.maybeTargetStack ??
-    input.answers.targetStack ??
+    input.answers.maybeTargetStack ??
     input.savedProfile?.targetStack ??
     null;
   const maybePreferredAgent =
     input.flags.maybePreferredAgent ??
-    input.answers.preferredAgent ??
+    input.answers.maybePreferredAgent ??
     input.savedProfile?.preferredAgent ??
     "codex";
   const askTasteQuestions =
@@ -67,15 +71,15 @@ export function mergeIntakePreferences(input: IntakePreferenceInput & {
   const maybeCloneDestination =
     input.flags.maybeCloneDestination ?? input.savedProfile?.cloneDestination ?? null;
   const maybeSourceRepo =
-    input.flags.maybeRepoUrl ?? input.sourceRepo ?? input.savedProfile?.sourceRepo ?? null;
+    input.flags.maybeRepoUrl ?? input.maybeSourceRepo ?? input.savedProfile?.sourceRepo ?? null;
 
   return {
     askTasteQuestions,
-    cloneDestination: maybeCloneDestination,
+    maybeCloneDestination,
     mode,
-    preferredAgent: maybePreferredAgent,
-    sourceRepo: maybeSourceRepo,
-    targetStack: maybeTargetStack,
+    maybePreferredAgent,
+    maybeSourceRepo,
+    maybeTargetStack,
     tasteAnswers,
     tasteDefaults: inferTasteDefaults({
       maybePreferredAgent,

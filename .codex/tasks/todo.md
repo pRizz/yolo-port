@@ -99,3 +99,23 @@
 
 - Applied fixes: renamed the nullable bootstrap flag fields and adjacent intake/planning ingress fields to `maybe*`, updated the merge and target-resolution path to use those names consistently, and removed the now-unused `bunState` parameter from `executeBootstrap`.
 - Residual risks: nullable naming is still broader than this bounded ingress wave, especially in resolved preference, profile, and UI-facing internal types that intentionally stayed stable for now.
+
+## Standards Audit And Fix Wave 5
+
+- [x] Rename nullable internal intake answer and resolved-preference surfaces to use `maybe*`
+- [x] Update the UI summary helpers and intake-profile builder input to keep nullable names explicit at internal boundaries
+- [x] Re-run the affected bootstrap and intake verification coverage while preserving the serialized profile schema
+
+## Verification
+
+- [x] `bun x tsc --noEmit`
+- [x] `bun test`
+- [x] `bash scripts/smoke/bootstrap-managed-repo.sh`
+- [x] `bash scripts/smoke/bootstrap-tools.sh`
+- [x] `bash scripts/smoke/intake-entry.sh`
+- [x] `bash scripts/smoke/intake-preferences.sh`
+
+## Completion Review
+
+- Applied fixes: renamed `IntakeAnswers`, `ResolvedIntakePreferences`, the pure bootstrap summary helper inputs, and the `createIntakeProfileRecord` input contract to use `maybe*` for nullable internal fields, while keeping the persisted intake-profile JSON schema unchanged.
+- Residual risks: the remaining nullable-name cleanup is now concentrated in inspection/state records and adapter return types such as repo inspection metadata and tool detection status.

@@ -124,8 +124,8 @@ describe("bootstrap ui renderers", () => {
     const profile = {
       askTasteQuestions: false,
       mode: "guided" as const,
-      preferredAgent: null,
-      targetStack: null
+      maybePreferredAgent: null,
+      maybeTargetStack: null
     };
 
     // Act
@@ -144,8 +144,8 @@ describe("bootstrap ui renderers", () => {
     // Arrange
     const profile = {
       askTasteQuestions: true,
-      preferredAgent: "codex",
-      targetStack: "rust/axum",
+      maybePreferredAgent: "codex",
+      maybeTargetStack: "rust/axum",
       tasteDefaults: [
         "Favor Bright Builds-aligned coding and architecture defaults.",
         "Bias toward the selected target stack: rust/axum."

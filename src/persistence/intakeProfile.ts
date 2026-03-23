@@ -15,23 +15,23 @@ export type IntakeProfileRecord = {
 
 export function createIntakeProfileRecord(input: {
   askTasteQuestions: boolean;
-  cloneDestination: string | null;
+  maybeCloneDestination: string | null;
   mode: BootstrapMode;
-  preferredAgent: string | null;
-  sourceRepo: string | null;
-  targetStack: string | null;
+  maybePreferredAgent: string | null;
+  maybeSourceRepo: string | null;
+  maybeTargetStack: string | null;
   tasteAnswers: Record<string, string>;
   tasteDefaults: string[];
   updatedAt: string;
 }): IntakeProfileRecord {
   return {
     askTasteQuestions: input.askTasteQuestions,
-    cloneDestination: input.cloneDestination,
+    cloneDestination: input.maybeCloneDestination,
     mode: input.mode,
-    preferredAgent: input.preferredAgent,
+    preferredAgent: input.maybePreferredAgent,
     schemaVersion: 1,
-    sourceRepo: input.sourceRepo,
-    targetStack: input.targetStack,
+    sourceRepo: input.maybeSourceRepo,
+    targetStack: input.maybeTargetStack,
     tasteAnswers: input.tasteAnswers,
     tasteDefaults: input.tasteDefaults,
     updatedAt: input.updatedAt

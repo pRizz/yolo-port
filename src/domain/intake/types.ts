@@ -56,8 +56,8 @@ export type RepoClassificationResult = {
 
 export type IntakeAnswers = {
   askTasteQuestions: boolean;
-  preferredAgent: string | null;
-  targetStack: string | null;
+  maybePreferredAgent: string | null;
+  maybeTargetStack: string | null;
   tasteAnswers: Record<string, string>;
 };
 

@@ -15,11 +15,11 @@ describe("intake profile persistence", () => {
     const repoRoot = mkdtempSync(path.join(os.tmpdir(), "yolo-port-intake-profile-"));
     const profile = createIntakeProfileRecord({
       askTasteQuestions: true,
-      cloneDestination: "./service",
+      maybeCloneDestination: "./service",
       mode: "standard",
-      preferredAgent: "codex",
-      sourceRepo: "https://github.com/example/service",
-      targetStack: "rust/axum",
+      maybePreferredAgent: "codex",
+      maybeSourceRepo: "https://github.com/example/service",
+      maybeTargetStack: "rust/axum",
       tasteAnswers: {
         profile: "defaults"
       },
