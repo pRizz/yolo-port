@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
 import { buildCommandRegistry, findCommand, type CommandContext } from "./router.js";
+import { normalizeIntakeRequest } from "../domain/intake/normalizeIntake.js";
 import { renderHelp } from "../ui/help.js";
 
 async function readVersion(): Promise<string> {
@@ -39,7 +40,7 @@ export async function run(argv: string[]): Promise<number> {
   const registry = buildCommandRegistry();
   const context = buildContext(version);
 
-  if (argv.length === 0 || isHelpRequest(argv)) {
+  if (isHelpRequest(argv)) {
     context.stdout.write(`${renderHelp(registry)}\n`);
     return 0;
   }
@@ -49,18 +50,34 @@ export async function run(argv: string[]): Promise<number> {
     return 0;
   }
 
-  const commandName = argv[0] ?? "bootstrap";
-  const command = findCommand(registry, commandName);
+  const normalized = normalizeIntakeRequest({
+    argv
+  });
+
+  if (normalized.kind === "bootstrap") {
+    const bootstrapCommand = findCommand(registry, "bootstrap");
+    if (!bootstrapCommand) {
+      context.stderr.write("Bootstrap command is not available.\n");
+      return 1;
+    }
+
+    return bootstrapCommand.run({
+      ...context,
+      args: normalized.forwardedArgs
+    });
+  }
+
+  const command = findCommand(registry, normalized.commandName);
 
   if (!command) {
-    context.stderr.write(`Unknown command: ${commandName}\n\n`);
+    context.stderr.write(`Unknown command: ${normalized.commandName}\n\n`);
     context.stdout.write(`${renderHelp(registry)}\n`);
     return 1;
   }
 
   return command.run({
     ...context,
-    args: argv.slice(1)
+    args: normalized.forwardedArgs
   });
 }
 

@@ -11,6 +11,8 @@ export function renderHelp(registry: CommandDefinition[]): string {
     "Lean port automation on top of get-shit-done.",
     "",
     "Usage:",
+    "  yolo-port [options]",
+    "  yolo-port <repo-url> [options]",
     "  yolo-port bootstrap [options]",
     "  yolo-port <command> [options]",
     "",
@@ -20,10 +22,12 @@ export function renderHelp(registry: CommandDefinition[]): string {
     "  version    Show the current version",
     "",
     "Default flow:",
-    "  Use `yolo-port bootstrap` to start the guided setup flow.",
+    "  Run `yolo-port` inside a repo or `yolo-port <repo-url>` to start intake.",
+    "  Use `yolo-port bootstrap` when you want the explicit setup command.",
     "",
     "Examples:",
-    "  yolo-port bootstrap",
+    "  yolo-port",
+    "  yolo-port https://github.com/example/service --dry-run",
     "  yolo-port bootstrap --dry-run"
   ].join("\n");
 }
