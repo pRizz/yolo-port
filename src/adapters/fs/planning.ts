@@ -106,11 +106,20 @@ export async function writePlanningScaffold(input: {
 
   const manifestPath = path.join(machineDir, "manifest.json");
   const bootstrapStatePath = path.join(machineDir, "bootstrap-state.json");
+  const intakeProfilePath = path.join(machineDir, "intake-profile.json");
+  const intakeProfileTemplate = await readTemplate("yolo-port/intake-profile.json.tpl");
+  const intakeProfileContent = renderTemplate(intakeProfileTemplate, {
+    MODE_JSON: JSON.stringify(input.mode),
+    SCHEMA_VERSION_JSON: JSON.stringify(1),
+    UPDATED_AT_JSON: JSON.stringify(input.updatedAt)
+  });
   await writeFile(manifestPath, manifestContent);
   await writeFile(bootstrapStatePath, stateContent);
+  await writeFile(intakeProfilePath, intakeProfileContent);
   written.push(
     path.relative(input.repoRoot, manifestPath),
-    path.relative(input.repoRoot, bootstrapStatePath)
+    path.relative(input.repoRoot, bootstrapStatePath),
+    path.relative(input.repoRoot, intakeProfilePath)
   );
 
   return {
