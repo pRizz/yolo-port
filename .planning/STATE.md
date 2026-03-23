@@ -11,8 +11,8 @@ See: .planning/PROJECT.md (updated 2026-03-22)
 
 Phase: 2 of 5 (Repository Intake and Workflow Control)
 Plan: 0 of 3 in current phase
-Status: Ready to discuss
-Last activity: 2026-03-22 — Phase 1 executed and verified
+Status: Ready to plan
+Last activity: 2026-03-22 — Phase 2 context gathered
 
 Progress: [██░░░░░░░░] 20%
 
@@ -51,6 +51,8 @@ Recent decisions affecting current work:
 - Phase 0: Treat 1:1 external parity as the default expectation, with rare exceptions flagged explicitly
 - Phase 1: Keep help/version on a Node-native launcher and hand Bun-managed commands off only after Bun is verified
 - Phase 1: Run Bright Builds before repo-local GSD mutation and write `.planning/yolo-port/` last
+- Phase 2: Inspect remotes before cloning, default remote clones into the current directory, and stop intake on dirty local repos
+- Phase 2: Classify repos conservatively, reuse saved intake preferences by default, and let flags/current answers override saved metadata
 
 ### Pending Todos
 
@@ -64,6 +66,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-22 23:43
-Stopped at: Phase 1 complete and verified
-Resume file: .planning/ROADMAP.md
+Last session: 2026-03-22 19:32 CDT
+Stopped at: Phase 2 context gathered and ready for planning
+Resume file: .planning/phases/02-repository-intake-and-workflow-control/02-CONTEXT.md
