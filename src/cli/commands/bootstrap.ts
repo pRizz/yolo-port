@@ -2,6 +2,7 @@ import process from "node:process";
 import readline from "node:readline/promises";
 import path from "node:path";
 
+import { readManagedRepoState } from "../../adapters/fs/managedRepo.js";
 import {
   cloneRemoteRepository,
   inspectLocalRepository,
@@ -22,9 +23,11 @@ import type {
   LocalRepositoryInspection,
   RemoteRepositoryInspection
 } from "../../domain/intake/types.js";
+import { classifyRepoState } from "../../domain/intake/classifyRepoState.js";
 import { planBootstrap } from "../../domain/bootstrap/planBootstrap.js";
 import type { BootstrapMode } from "../../domain/bootstrap/types.js";
 import { renderActionLog } from "../../ui/actionLog.js";
+import { renderRepoClassification } from "../../ui/classification.js";
 import { writeSectionBanner } from "../../ui/progress.js";
 import { renderBrightBuildsBlockedRecovery } from "../../ui/recovery.js";
 import { renderBootstrapSummary } from "../../ui/summary.js";
@@ -210,6 +213,28 @@ async function confirmForce(
   return answer.trim().toLowerCase() === "y";
 }
 
+async function confirmDetectedRepoState(
+  state: string,
+  input: NodeJS.ReadStream,
+  output: NodeJS.WriteStream
+): Promise<boolean> {
+  if (!input.isTTY || !output.isTTY) {
+    output.write(
+      `Repository state needs confirmation before yolo-port continues. Re-run interactively to confirm the detected state (${state}).\n`
+    );
+    return false;
+  }
+
+  const prompt = readline.createInterface({
+    input,
+    output
+  });
+  const answer = await prompt.question(`Proceed using the detected state "${state}"? [Y/n] `);
+  prompt.close();
+
+  return answer.trim() === "" || answer.trim().toLowerCase() === "y";
+}
+
 type ResolvedBootstrapTarget =
   | {
       inspection: LocalRepositoryInspection;
@@ -257,6 +282,18 @@ export function createBootstrapCommand(): CommandDefinition {
           })();
       const bunState = detectBun();
       const gsdState = detectGsd();
+      const managedState =
+        resolvedTarget.kind === "local"
+          ? await readManagedRepoState({
+              repoRoot: resolvedTarget.repoRoot
+            })
+          : null;
+      const classification =
+        managedState === null
+          ? null
+          : classifyRepoState({
+              managedState
+            });
 
       writeSectionBanner(context.stdout, "yolo-port ► Checks");
       context.stdout.write(
@@ -274,6 +311,15 @@ export function createBootstrapCommand(): CommandDefinition {
           ? renderLocalRepositoryChecks(resolvedTarget.inspection)
           : renderRemoteRepositoryChecks(resolvedTarget.inspection)
       );
+      if (classification && managedState) {
+        writeLines(
+          context.stdout,
+          renderRepoClassification({
+            managedState,
+            result: classification
+          })
+        );
+      }
 
       if (
         resolvedTarget.kind === "local" &&
@@ -281,6 +327,25 @@ export function createBootstrapCommand(): CommandDefinition {
       ) {
         writeLines(context.stdout, renderDirtyRepositoryRecovery(resolvedTarget.inspection));
         return 1;
+      }
+
+      if (classification?.needsConfirmation) {
+        const confirmedState = await confirmDetectedRepoState(
+          classification.recommendedState,
+          process.stdin,
+          context.stdout
+        );
+
+        if (!confirmedState) {
+          return 1;
+        }
+      }
+
+      if (classification?.state === "already-ported") {
+        context.stdout.write(
+          "This repository already looks ported. The actions above are the current next steps for this state.\n"
+        );
+        return 0;
       }
 
       writeSectionBanner(context.stdout, "yolo-port ► Questions");
