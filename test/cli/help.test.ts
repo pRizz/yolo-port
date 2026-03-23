@@ -29,6 +29,7 @@ describe("renderHelp", () => {
     expect(output).toContain("Run `yolo-port` inside a repo or `yolo-port <repo-url>` to start intake.");
     expect(output).toContain("Use `yolo-port bootstrap` when you want the explicit setup command.");
     expect(output).toContain("yolo-port https://github.com/example/service --dry-run");
+    expect(output).toContain("yolo-port --mode yolo --target-stack rust/axum");
     expect(output).toContain("yolo-port bootstrap --dry-run");
   });
 });

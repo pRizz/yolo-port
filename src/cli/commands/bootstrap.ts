@@ -2,6 +2,7 @@ import process from "node:process";
 import readline from "node:readline/promises";
 import path from "node:path";
 
+import { readIntakeProfile, writeIntakeProfile } from "../../adapters/fs/intakeProfile.js";
 import { readManagedRepoState } from "../../adapters/fs/managedRepo.js";
 import {
   cloneRemoteRepository,
@@ -19,13 +20,16 @@ import {
   planGsdAction,
   runGsdAction
 } from "../../adapters/system/gsd.js";
+import { mergeIntakePreferences } from "../../domain/intake/preferences.js";
 import type {
+  IntakeAnswers,
   LocalRepositoryInspection,
   RemoteRepositoryInspection
 } from "../../domain/intake/types.js";
 import { classifyRepoState } from "../../domain/intake/classifyRepoState.js";
 import { planBootstrap } from "../../domain/bootstrap/planBootstrap.js";
 import type { BootstrapMode } from "../../domain/bootstrap/types.js";
+import { createIntakeProfileRecord } from "../../persistence/intakeProfile.js";
 import { renderActionLog } from "../../ui/actionLog.js";
 import { renderRepoClassification } from "../../ui/classification.js";
 import { writeSectionBanner } from "../../ui/progress.js";
@@ -95,6 +99,51 @@ function writeLines(output: NodeJS.WriteStream, lines: string[]): void {
   for (const line of lines) {
     output.write(`${line}\n`);
   }
+}
+
+async function promptText(
+  input: NodeJS.ReadStream,
+  output: NodeJS.WriteStream,
+  question: string
+): Promise<string | null> {
+  if (!input.isTTY || !output.isTTY) {
+    return null;
+  }
+
+  const prompt = readline.createInterface({
+    input,
+    output
+  });
+  const answer = await prompt.question(question);
+  prompt.close();
+
+  const trimmed = answer.trim();
+  return trimmed === "" ? null : trimmed;
+}
+
+async function promptBoolean(
+  input: NodeJS.ReadStream,
+  output: NodeJS.WriteStream,
+  question: string,
+  defaultValue: boolean
+): Promise<boolean> {
+  if (!input.isTTY || !output.isTTY) {
+    return defaultValue;
+  }
+
+  const prompt = readline.createInterface({
+    input,
+    output
+  });
+  const answer = await prompt.question(question);
+  prompt.close();
+
+  const normalized = answer.trim().toLowerCase();
+  if (normalized === "") {
+    return defaultValue;
+  }
+
+  return normalized === "y" || normalized === "yes";
 }
 
 function renderLocalRepositoryChecks(inspection: LocalRepositoryInspection): string[] {
@@ -213,6 +262,39 @@ async function confirmForce(
   return answer.trim().toLowerCase() === "y";
 }
 
+function renderSavedPreferenceSummary(profile: {
+  askTasteQuestions: boolean;
+  mode: BootstrapMode;
+  preferredAgent: string | null;
+  targetStack: string | null;
+}): string[] {
+  return [
+    `Mode: ${profile.mode}`,
+    `Target stack: ${profile.targetStack ?? "not set"}`,
+    `Preferred agent: ${profile.preferredAgent ?? "codex"}`,
+    `Taste questions: ${profile.askTasteQuestions ? "saved answers/defaults enabled" : "inferred defaults"}`
+  ];
+}
+
+function renderResolvedPreferenceSummary(profile: {
+  askTasteQuestions: boolean;
+  preferredAgent: string | null;
+  targetStack: string | null;
+  tasteDefaults: string[];
+}): string[] {
+  const lines = [
+    `Target stack: ${profile.targetStack ?? "not set"}`,
+    `Preferred agent: ${profile.preferredAgent ?? "codex"}`,
+    `Taste handling: ${profile.askTasteQuestions ? "custom answers allowed" : "Bright Builds-aligned defaults"}`
+  ];
+
+  if (profile.tasteDefaults.length > 0) {
+    lines.push(`Taste defaults: ${profile.tasteDefaults.join(" | ")}`);
+  }
+
+  return lines;
+}
+
 async function confirmDetectedRepoState(
   state: string,
   input: NodeJS.ReadStream,
@@ -288,6 +370,12 @@ export function createBootstrapCommand(): CommandDefinition {
               repoRoot: resolvedTarget.repoRoot
             })
           : null;
+      const savedProfile =
+        resolvedTarget.kind === "local"
+          ? await readIntakeProfile({
+              repoRoot: resolvedTarget.repoRoot
+            })
+          : null;
       const classification =
         managedState === null
           ? null
@@ -350,12 +438,86 @@ export function createBootstrapCommand(): CommandDefinition {
 
       writeSectionBanner(context.stdout, "yolo-port ► Questions");
       const mode = await resolveMode(
-        flags.maybeMode,
+        flags.maybeMode ?? savedProfile?.mode ?? null,
         flags.assumeYes,
         process.stdin,
         context.stdout
       );
       context.stdout.write(`Selected mode: ${mode}\n`);
+      if (savedProfile) {
+        context.stdout.write("Saved preferences were found and will be reused unless you override them.\n");
+        writeLines(context.stdout, renderSavedPreferenceSummary(savedProfile));
+      }
+      if (mode !== "yolo") {
+        context.stdout.write("Tip: you can switch to yolo later with --mode yolo.\n");
+      }
+
+      const currentAnswers: Partial<IntakeAnswers> & {
+        maybeMode?: BootstrapMode | null;
+      } = {
+        maybeMode: mode,
+        tasteAnswers: {}
+      };
+
+      if (!flags.targetStack && !savedProfile?.targetStack && mode !== "yolo") {
+        currentAnswers.targetStack = await promptText(
+          process.stdin,
+          context.stdout,
+          "Target stack (optional, e.g. rust/axum): "
+        );
+      }
+
+      if (!flags.preferredAgent && !savedProfile?.preferredAgent && mode !== "yolo") {
+        currentAnswers.preferredAgent =
+          (await promptText(
+            process.stdin,
+            context.stdout,
+            "Preferred agent/provider (codex): "
+          )) ?? "codex";
+      }
+
+      if (flags.askTasteQuestions !== null) {
+        currentAnswers.askTasteQuestions = flags.askTasteQuestions;
+      } else if (savedProfile) {
+        currentAnswers.askTasteQuestions = savedProfile.askTasteQuestions;
+      } else if (mode === "yolo" || flags.assumeYes) {
+        currentAnswers.askTasteQuestions = false;
+      } else {
+        currentAnswers.askTasteQuestions = await promptBoolean(
+          process.stdin,
+          context.stdout,
+          "Answer a few design/taste questions now? [y/N] ",
+          false
+        );
+      }
+
+      if (currentAnswers.askTasteQuestions && mode !== "yolo") {
+        const profileAnswer = await promptText(
+          process.stdin,
+          context.stdout,
+          "Taste profile (defaults/strict/pragmatic) [defaults]: "
+        );
+        const notesAnswer = await promptText(
+          process.stdin,
+          context.stdout,
+          "Additional taste notes (optional): "
+        );
+
+        currentAnswers.tasteAnswers = {
+          ...(profileAnswer ? { profile: profileAnswer } : { profile: "defaults" }),
+          ...(notesAnswer ? { notes: notesAnswer } : {})
+        };
+      }
+
+      const resolvedPreferences = mergeIntakePreferences({
+        answers: currentAnswers,
+        flags,
+        savedProfile,
+        sourceRepo:
+          resolvedTarget.kind === "remote"
+            ? resolvedTarget.inspection.normalizedUrl
+            : resolvedTarget.repoRoot
+      });
 
       const plan = planBootstrap({
         bun: bunState,
@@ -384,6 +546,7 @@ export function createBootstrapCommand(): CommandDefinition {
           `Bright Builds action: ${brightBuildsStatus.recommendedAction}\n`
         );
       }
+      writeLines(context.stdout, renderResolvedPreferenceSummary(resolvedPreferences));
       writeLines(context.stdout, renderActionLog(plan.steps[3]?.actions ?? [], flags.verbosity));
       context.stdout.write(`Planned next command: ${plan.nextCommand}\n`);
 
@@ -475,14 +638,35 @@ export function createBootstrapCommand(): CommandDefinition {
         updatedAt,
         warnings: gsdState.reasons
       });
+      const intakeProfilePath = await writeIntakeProfile({
+        profile: createIntakeProfileRecord({
+          askTasteQuestions: resolvedPreferences.askTasteQuestions,
+          cloneDestination:
+            resolvedTarget.kind === "remote"
+              ? resolvedTarget.inspection.cloneDestination
+              : resolvedPreferences.cloneDestination,
+          mode: resolvedPreferences.mode,
+          preferredAgent: resolvedPreferences.preferredAgent,
+          sourceRepo: resolvedPreferences.sourceRepo,
+          targetStack: resolvedPreferences.targetStack,
+          tasteAnswers: resolvedPreferences.tasteAnswers,
+          tasteDefaults: resolvedPreferences.tasteDefaults,
+          updatedAt
+        }),
+        repoRoot
+      });
+      const filesWritten = scaffoldResult.written.includes(intakeProfilePath)
+        ? scaffoldResult.written
+        : [...scaffoldResult.written, intakeProfilePath];
 
       writeSectionBanner(context.stdout, "yolo-port ► Complete");
       writeLines(
         context.stdout,
         renderBootstrapSummary({
-          filesWritten: scaffoldResult.written,
+          filesWritten,
           mode,
           nextCommand: "yolo-port",
+          preferenceLines: renderResolvedPreferenceSummary(resolvedPreferences),
           repoState: currentBrightBuildsStatus.repoState,
           toolLines: [
             `Bun ${bunState.version ?? "available"}`,

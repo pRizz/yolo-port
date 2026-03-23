@@ -36,7 +36,12 @@ function renderHelp() {
     "  version     Show the current version",
     "",
     "Run `yolo-port` inside a repo or `yolo-port <repo-url>` to start intake.",
-    "Use `yolo-port bootstrap` when you want the explicit setup command."
+    "Use `yolo-port bootstrap` when you want the explicit setup command.",
+    "",
+    "Examples:",
+    "  yolo-port",
+    "  yolo-port https://github.com/example/service --dry-run",
+    "  yolo-port --mode yolo --target-stack rust/axum"
   ].join("\n");
 }
 

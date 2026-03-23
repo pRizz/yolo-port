@@ -4,6 +4,7 @@ export function renderBootstrapSummary(input: {
   filesWritten: string[];
   mode: BootstrapMode;
   nextCommand: string;
+  preferenceLines?: string[];
   repoState: string;
   toolLines: string[];
   warnings: string[];
@@ -21,6 +22,13 @@ export function renderBootstrapSummary(input: {
   lines.push("Files written:");
   for (const filePath of input.filesWritten) {
     lines.push(`- ${filePath}`);
+  }
+
+  if (input.preferenceLines && input.preferenceLines.length > 0) {
+    lines.push("Saved preferences:");
+    for (const preferenceLine of input.preferenceLines) {
+      lines.push(`- ${preferenceLine}`);
+    }
   }
 
   if (input.warnings.length > 0) {
