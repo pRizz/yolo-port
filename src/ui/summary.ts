@@ -4,6 +4,7 @@ export function renderBootstrapSummary(input: {
   filesWritten: string[];
   mode: BootstrapMode;
   nextCommand: string;
+  nextStepsLine?: string;
   preferenceLines?: string[];
   repoState: string;
   toolLines: string[];
@@ -39,6 +40,9 @@ export function renderBootstrapSummary(input: {
   }
 
   lines.push(`Next command: ${input.nextCommand}`);
-  lines.push("Next steps: review the scaffold, then continue with repository intake and planning.");
+  lines.push(
+    input.nextStepsLine ??
+      "Next steps: review the scaffold, then continue with repository intake and planning."
+  );
   return lines;
 }

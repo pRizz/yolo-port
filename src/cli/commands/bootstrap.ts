@@ -17,13 +17,19 @@ import {
   renderSavedPreferenceSummary
 } from "../../ui/bootstrap.js";
 import { renderRepoClassification } from "../../ui/classification.js";
+import { renderPlanningPreview } from "../../ui/planning.js";
 import { writeSectionBanner } from "../../ui/progress.js";
 import { renderBootstrapSummary } from "../../ui/summary.js";
 import { executeBootstrap } from "../bootstrap/execute.js";
 import {
+  buildBootstrapPlanningDraft,
+  persistBootstrapPlanningDraft
+} from "../bootstrap/planning.js";
+import {
   collectBootstrapPreferenceAnswers,
   confirmDetectedRepoState,
   confirmExecution,
+  confirmPlanningApproval,
   resolveMode
 } from "../bootstrap/interaction.js";
 import { resolveBootstrapTarget } from "../bootstrap/target.js";
@@ -246,19 +252,64 @@ export function createBootstrapCommand(): CommandDefinition {
         return executionOutcome.exitCode;
       }
 
+      const planningGeneratedAt = new Date().toISOString();
+      const planningDraft = await buildBootstrapPlanningDraft({
+        generatedAt: planningGeneratedAt,
+        maybePreferredAgent: resolvedPreferences.maybePreferredAgent,
+        maybeTargetStack: resolvedPreferences.maybeTargetStack,
+        mode,
+        repoRoot: executionOutcome.result.repoRoot,
+        sourceKind: resolvedTarget.kind
+      });
+
+      writeSectionBanner(context.stdout, "yolo-port ► Plan Preview");
+      writeLines(
+        context.stdout,
+        renderPlanningPreview({
+          estimate: planningDraft.estimate,
+          inventory: planningDraft.interfaceInventory,
+          sourceReference: planningDraft.sourceReference
+        })
+      );
+
+      const planningApproved = await confirmPlanningApproval({
+        assumeYes: flags.assumeYes,
+        io: {
+          input: process.stdin,
+          output: context.stdout
+        },
+        mode
+      });
+      const planningFiles = await persistBootstrapPlanningDraft({
+        approvalMode: flags.assumeYes || mode === "yolo" ? "auto" : "prompt",
+        approved: planningApproved,
+        approvedAt: new Date().toISOString(),
+        draft: planningDraft,
+        generatedAt: planningGeneratedAt,
+        maybeTargetStack: resolvedPreferences.maybeTargetStack,
+        repoRoot: executionOutcome.result.repoRoot
+      });
+      const filesWritten = Array.from(
+        new Set([...executionOutcome.result.filesWritten, ...planningFiles])
+      );
+
       writeSectionBanner(context.stdout, "yolo-port ► Complete");
       writeLines(
         context.stdout,
         renderBootstrapSummary({
-          filesWritten: executionOutcome.result.filesWritten,
+          filesWritten,
           mode,
           nextCommand: "yolo-port",
+          nextStepsLine: planningApproved
+            ? "Next steps: review the parity plan artifacts, then continue once execution handoff lands."
+            : "Next steps: review the parity plan artifacts and approve the saved plan before later execution.",
           preferenceLines: renderResolvedPreferenceSummary(resolvedPreferences),
           repoState: executionOutcome.result.brightBuildsStatus.repoState,
           toolLines: [
             `Bun ${bunState.version ?? "available"}`,
             `Bright Builds ${executionOutcome.result.brightBuildsStatus.repoState}`,
-            `get-shit-done action ${executionOutcome.result.gsdResult.kind}`
+            `get-shit-done action ${executionOutcome.result.gsdResult.kind}`,
+            `Planning ${planningDraft.estimate.selectedProvider}/${planningDraft.estimate.selectedModel}`
           ],
           warnings: gsdState.reasons
         })

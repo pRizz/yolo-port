@@ -16,7 +16,7 @@
 
 - [x] **REPO-01**: User can start a new port by passing a remote GitHub repository URL to `yolo-port`.
 - [x] **REPO-02**: User can run `yolo-port` inside an existing local repository and have the tool classify it as fresh, in-progress, or already ported.
-- [ ] **REPO-03**: User can preserve a reference snapshot of the source implementation before destructive structural changes begin.
+- [x] **REPO-03**: User can preserve a reference snapshot of the source implementation before destructive structural changes begin.
 
 ### Workflow Control
 
@@ -26,10 +26,10 @@
 
 ### Planning and Parity
 
-- [ ] **PLAN-01**: User can receive a high-level inventory of external APIs and interfaces before major execution begins.
-- [ ] **PLAN-02**: User can review an explicit parity checklist that targets 1:1 external API and interface parity with rare exceptions clearly flagged.
-- [ ] **PLAN-03**: User can receive duration, token, and USD estimate ranges for the proposed port based on the selected AI model and reasoning profile.
-- [ ] **PLAN-04**: User can see the pricing snapshot date and source provenance used for the estimate before deciding whether to proceed.
+- [x] **PLAN-01**: User can receive a high-level inventory of external APIs and interfaces before major execution begins.
+- [x] **PLAN-02**: User can review an explicit parity checklist that targets 1:1 external API and interface parity with rare exceptions clearly flagged.
+- [x] **PLAN-03**: User can receive duration, token, and USD estimate ranges for the proposed port based on the selected AI model and reasoning profile.
+- [x] **PLAN-04**: User can see the pricing snapshot date and source provenance used for the estimate before deciding whether to proceed.
 
 ### Execution and Recovery
 
@@ -80,14 +80,14 @@ Which phases cover which requirements. Updated during roadmap creation.
 | BOOT-04 | Phase 1 | Complete |
 | REPO-01 | Phase 2 | Complete |
 | REPO-02 | Phase 2 | Complete |
-| REPO-03 | Phase 3 | Pending |
+| REPO-03 | Phase 3 | Complete |
 | FLOW-01 | Phase 2 | Complete |
 | FLOW-02 | Phase 2 | Complete |
 | FLOW-03 | Phase 2 | Complete |
-| PLAN-01 | Phase 3 | Pending |
-| PLAN-02 | Phase 3 | Pending |
-| PLAN-03 | Phase 3 | Pending |
-| PLAN-04 | Phase 3 | Pending |
+| PLAN-01 | Phase 3 | Complete |
+| PLAN-02 | Phase 3 | Complete |
+| PLAN-03 | Phase 3 | Complete |
+| PLAN-04 | Phase 3 | Complete |
 | EXEC-01 | Phase 1 | Complete |
 | EXEC-02 | Phase 4 | Pending |
 | EXEC-03 | Phase 4 | Pending |
@@ -103,4 +103,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-03-22*
-*Last updated: 2026-03-22 after Phase 2 completion*
+*Last updated: 2026-04-11 after Phase 3 completion*

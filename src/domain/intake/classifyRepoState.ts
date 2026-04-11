@@ -9,14 +9,15 @@ export function classifyRepoState(input: {
   const hasManagedMarker = input.managedState.manifest !== null;
   const hasBootstrapState = input.managedState.bootstrapState !== null;
   const hasSourceReference = input.managedState.sourceReferencePaths.length > 0;
+  const hasPlanningParityArtifacts = input.managedState.parityArtifactPaths.length > 0;
   const hasCompletionArtifacts =
     input.managedState.explicitCompletedStatePath !== null ||
-    input.managedState.finalReportPaths.length > 0 ||
-    input.managedState.parityArtifactPaths.length > 0;
+    input.managedState.finalReportPaths.length > 0;
   const hasAnyManagedEvidence =
     hasManagedMarker ||
     hasBootstrapState ||
     hasSourceReference ||
+    hasPlanningParityArtifacts ||
     hasCompletionArtifacts ||
     (input.managedState.yoloPortDir !== null && input.managedState.recentSummaryPaths.length > 0);
 
@@ -34,8 +35,12 @@ export function classifyRepoState(input: {
     evidence.push("Source reference artifacts are still missing.");
   }
 
+  if (hasPlanningParityArtifacts) {
+    evidence.push("Parity planning artifacts were found.");
+  }
+
   if (hasCompletionArtifacts) {
-    evidence.push("Completion-oriented report or parity artifacts were found.");
+    evidence.push("Completion-oriented report artifacts were found.");
   }
 
   if (!hasAnyManagedEvidence) {

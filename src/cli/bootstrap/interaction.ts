@@ -103,6 +103,27 @@ export async function confirmExecution(input: {
   return maybeAnswer === null || maybeAnswer === "" || maybeAnswer.toLowerCase() === "y";
 }
 
+export async function confirmPlanningApproval(input: {
+  assumeYes: boolean;
+  io: PromptIO;
+  mode: BootstrapMode;
+}): Promise<boolean> {
+  if (input.assumeYes || input.mode === "yolo") {
+    return true;
+  }
+
+  if (!input.io.input.isTTY || !input.io.output.isTTY) {
+    return false;
+  }
+
+  const maybeAnswer = await askQuestion(
+    input.io,
+    "Approve this parity-first plan for downstream execution once the handoff is available? [Y/n] "
+  );
+
+  return maybeAnswer === null || maybeAnswer === "" || maybeAnswer.toLowerCase() === "y";
+}
+
 export async function confirmCloneIntoExistingDestination(input: {
   inspection: RemoteRepositoryInspection;
   io: PromptIO;

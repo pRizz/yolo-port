@@ -95,6 +95,7 @@ describe("bootstrap managed repo", () => {
     // Assert
     expect(result.status).toBe(0);
     expect(readFileSync(path.join(repoRoot, ".planning", "yolo-port", "manifest.json"), "utf8")).toContain("\"manager\": \"yolo-port\"");
+    expect(readFileSync(path.join(repoRoot, ".planning", "yolo-port", "port-plan.md"), "utf8")).toContain("Proceed Gate");
 
     // Cleanup
     rmSync(tempDir, { force: true, recursive: true });

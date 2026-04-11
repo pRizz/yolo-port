@@ -32,6 +32,7 @@ export type BootstrapExecutionResult = {
   brightBuildsStatus: BrightBuildsStatus;
   filesWritten: string[];
   gsdResult: GsdActionResult;
+  repoRoot: string;
 };
 
 export type BootstrapExecutionOutcome =
@@ -164,7 +165,8 @@ export async function executeBootstrap(input: {
     result: {
       brightBuildsStatus: currentBrightBuildsStatus,
       filesWritten,
-      gsdResult
+      gsdResult,
+      repoRoot
     }
   };
 }

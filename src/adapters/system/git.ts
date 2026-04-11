@@ -6,6 +6,11 @@ import type {
   LocalRepositoryInspection,
   RemoteRepositoryInspection
 } from "../../domain/intake/types.js";
+import {
+  createSourceReferenceRecord,
+  type SourceReferenceRecord
+} from "../../persistence/portPlanning.js";
+import type { RepositorySnapshot } from "../fs/repositorySnapshot.js";
 
 type ProcessResult = {
   code: number;
@@ -43,6 +48,19 @@ async function runProcess(
     code,
     output
   };
+}
+
+async function readGitValue(repoRoot: string, args: string[]): Promise<string | null> {
+  const result = await runProcess("git", args, {
+    cwd: repoRoot
+  });
+
+  if (result.code !== 0) {
+    return null;
+  }
+
+  const value = result.output.trim();
+  return value === "" ? null : value;
 }
 
 function normalizeRemoteUrl(url: string): {
@@ -221,4 +239,94 @@ export async function cloneRemoteRepository(options: {
     destination: options.destination,
     output: result.output
   };
+}
+
+export async function preserveGitSourceReference(options: {
+  generatedAt: string;
+  maybeTargetStack: string | null;
+  repoRoot: string;
+  snapshot: Pick<RepositorySnapshot, "files">;
+  sourceKind: "local" | "remote";
+}): Promise<SourceReferenceRecord> {
+  const repoCheck = await runProcess("git", ["rev-parse", "--show-toplevel"], {
+    cwd: options.repoRoot
+  });
+  const manifestSamplePaths = options.snapshot.files
+    .map((file) => file.relativePath)
+    .sort()
+    .slice(0, 10);
+
+  if (repoCheck.code !== 0) {
+    return createSourceReferenceRecord({
+      generatedAt: options.generatedAt,
+      git: {
+        branch: null,
+        currentHeadSha: null,
+        referenceSha: null,
+        remotes: [],
+        tagName: null
+      },
+      manifestSamplePaths,
+      repoRoot: options.repoRoot,
+      sourceKind: options.sourceKind,
+      strategy: "filesystem-manifest",
+      structuralIntent: {
+        parityGoal: "1:1 external interface parity",
+        requiresReferenceBeforeExecution: true,
+        strategy: "in-place-managed-port",
+        targetStack: options.maybeTargetStack
+      }
+    });
+  }
+
+  const tagName = "yolo-port/source-reference";
+  const maybeReferenceSha = await readGitValue(options.repoRoot, [
+    "rev-parse",
+    `refs/tags/${tagName}`
+  ]);
+
+  if (!maybeReferenceSha) {
+    const tagResult = await runProcess("git", ["tag", tagName, "HEAD"], {
+      cwd: options.repoRoot
+    });
+
+    if (tagResult.code !== 0) {
+      throw new Error(tagResult.output.trim() || "Failed to create the source-reference tag.");
+    }
+  }
+
+  const remotesResult = await runProcess("git", ["remote", "-v"], {
+    cwd: options.repoRoot
+  });
+  const remotes = Array.from(
+    new Set(
+      remotesResult.output
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .map((line) => line.split(/\s+/)[1])
+        .filter((value): value is string => Boolean(value))
+    )
+  );
+
+  return createSourceReferenceRecord({
+    generatedAt: options.generatedAt,
+    git: {
+      branch: await readGitValue(options.repoRoot, ["rev-parse", "--abbrev-ref", "HEAD"]),
+      currentHeadSha: await readGitValue(options.repoRoot, ["rev-parse", "HEAD"]),
+      referenceSha: await readGitValue(options.repoRoot, ["rev-parse", `refs/tags/${tagName}`]),
+      remotes,
+      tagName
+    },
+    manifestSamplePaths,
+    repoRoot: options.repoRoot,
+    sourceKind: options.sourceKind,
+    strategy: "git-tag",
+    structuralIntent: {
+      parityGoal: "1:1 external interface parity",
+      requiresReferenceBeforeExecution: true,
+      strategy: "in-place-managed-port",
+      targetStack: options.maybeTargetStack
+    }
+  });
 }
