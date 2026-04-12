@@ -124,6 +124,22 @@ export async function confirmPlanningApproval(input: {
   return maybeAnswer === null || maybeAnswer === "" || maybeAnswer.toLowerCase() === "y";
 }
 
+export async function confirmResumeExecution(input: {
+  io: PromptIO;
+  stepLabel: string;
+}): Promise<boolean> {
+  if (!input.io.input.isTTY || !input.io.output.isTTY) {
+    return false;
+  }
+
+  const maybeAnswer = await askQuestion(
+    input.io,
+    `Resume the managed execution from "${input.stepLabel}"? [Y/n] `
+  );
+
+  return maybeAnswer === null || maybeAnswer === "" || maybeAnswer.toLowerCase() === "y";
+}
+
 export async function confirmCloneIntoExistingDestination(input: {
   inspection: RemoteRepositoryInspection;
   io: PromptIO;

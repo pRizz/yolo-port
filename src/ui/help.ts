@@ -29,6 +29,7 @@ export function renderHelp(registry: CommandDefinition[]): string {
     "  yolo-port",
     "  yolo-port https://github.com/example/service --dry-run",
     "  yolo-port --mode yolo --target-stack rust/axum",
-    "  yolo-port bootstrap --dry-run"
+    "  yolo-port bootstrap --dry-run",
+    "  yolo-port resume --yes"
   ].join("\n");
 }

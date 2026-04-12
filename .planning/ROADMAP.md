@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Bootstrap and Foundations** - Make yolo-port installable, Codex-ready, and able to scaffold the baseline planning environment.
 - [x] **Phase 2: Repository Intake and Workflow Control** - Add remote/local repo entry flows, project classification, and persisted involvement modes.
 - [x] **Phase 3: Parity Planning and Estimation** - Inventory exposed interfaces, preserve source reference state, and produce up-front estimate ranges with provenance.
-- [ ] **Phase 4: GSD Execution and Recovery** - Hand off planning/execution to GSD-compatible flows with durable step checkpoints and resumable YOLO operation.
+- [x] **Phase 4: GSD Execution and Recovery** - Hand off planning/execution to GSD-compatible flows with durable step checkpoints and resumable YOLO operation.
 - [ ] **Phase 5: Audit and Final Reporting** - Audit completed ports for parity and generate final reports that explain what happened and what remains.
 
 ## Phase Details
@@ -83,9 +83,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 04-01: Implement the GSD adapter boundary and execution handoff contract
-- [ ] 04-02: Wire checkpointed execution events and resume selection into the workflow engine
-- [ ] 04-03: Validate end-to-end standard and YOLO execution loops with recovery paths
+- [x] 04-01: Implement the GSD adapter boundary and execution handoff contract
+- [x] 04-02: Wire checkpointed execution events and resume selection into the workflow engine
+- [x] 04-03: Validate end-to-end standard and YOLO execution loops with recovery paths
 
 ### Phase 5: Audit and Final Reporting
 **Goal**: Let users audit completed ports for parity and receive a comprehensive explanation of outcomes, deltas, and next actions.
@@ -112,5 +112,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 1. Bootstrap and Foundations | 3/3 | Complete | 2026-03-22 |
 | 2. Repository Intake and Workflow Control | 3/3 | Complete | 2026-03-22 |
 | 3. Parity Planning and Estimation | 4/4 | Complete | 2026-04-11 |
-| 4. GSD Execution and Recovery | 0/3 | Not started | - |
+| 4. GSD Execution and Recovery | 3/3 | Complete | 2026-04-12 |
 | 5. Audit and Final Reporting | 0/3 | Not started | - |

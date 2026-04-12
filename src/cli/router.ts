@@ -1,4 +1,5 @@
 import { createBootstrapCommand } from "./commands/bootstrap.js";
+import { createResumeCommand } from "./commands/resume.js";
 
 export type CommandContext = {
   args: string[];
@@ -31,7 +32,7 @@ function createPlannedCommand(name: string, description: string): CommandDefinit
 export function buildCommandRegistry(): CommandDefinition[] {
   return [
     createBootstrapCommand(),
-    createPlannedCommand("resume", "Resume an interrupted managed run"),
+    createResumeCommand(),
     createPlannedCommand("audit", "Audit an existing port for parity"),
     createPlannedCommand("doctor", "Inspect environment and dependency readiness")
   ];

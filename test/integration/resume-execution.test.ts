@@ -48,17 +48,29 @@ printf '2026.03.22\n' > "$CODEX_HOME/get-shit-done/VERSION"
   return scriptPath;
 }
 
-function writeExecutor(tempDir: string): string {
+function writeFlakyExecutor(tempDir: string): string {
   const scriptPath = path.join(tempDir, "executor.sh");
-  const script = `#!/usr/bin/env bash
+  const stateFile = path.join(tempDir, "executor-state.txt");
+  writeFileSync(
+    scriptPath,
+    `#!/usr/bin/env bash
 set -euo pipefail
 repo_root="$1"
+prompt_path="$2"
+mode="$3"
+state="$(cat "${stateFile}" 2>/dev/null || printf 'fail')"
+if [[ "$state" == "fail" ]]; then
+  printf 'ok' > "${stateFile}"
+  printf 'simulated failure for %s %s %s\\n' "$repo_root" "$prompt_path" "$mode" >&2
+  exit 1
+fi
 mkdir -p "$repo_root/.planning/yolo-port"
 printf 'runner success\\n' > "$repo_root/.planning/yolo-port/executor-marker.txt"
-printf 'runner success\\n'
-`;
-  writeFileSync(scriptPath, script);
+printf 'success for %s %s %s\\n' "$repo_root" "$prompt_path" "$mode"
+`
+  );
   chmodSync(scriptPath, 0o755);
+  writeFileSync(stateFile, "fail");
   return scriptPath;
 }
 
@@ -77,23 +89,17 @@ function initGitRepo(repoRoot: string): void {
   });
 }
 
-describe("bootstrap planning", () => {
-  test("creates parity-planning artifacts for a representative repo", () => {
+describe("resume execution", () => {
+  test("resumes from a failed managed execution and completes on retry", () => {
     // Arrange
     const workspaceRoot = fileURLToPath(new URL("../..", import.meta.url));
-    const tempDir = mkdtempSync(path.join(os.tmpdir(), "yolo-port-planning-"));
+    const tempDir = mkdtempSync(path.join(os.tmpdir(), "yolo-port-resume-"));
     const repoRoot = path.join(tempDir, "repo");
     const codexHome = path.join(tempDir, ".codex");
-    mkdirSync(repoRoot, {
-      recursive: true
-    });
+    mkdirSync(repoRoot, { recursive: true });
     initGitRepo(repoRoot);
-    mkdirSync(path.join(repoRoot, "src", "cli"), {
-      recursive: true
-    });
-    mkdirSync(path.join(repoRoot, "bin"), {
-      recursive: true
-    });
+    mkdirSync(path.join(repoRoot, "src", "cli"), { recursive: true });
+    mkdirSync(path.join(repoRoot, "bin"), { recursive: true });
     writeFileSync(path.join(repoRoot, "package.json"), JSON.stringify({
       bin: {
         "demo-cli": "bin/demo.js"
@@ -101,15 +107,8 @@ describe("bootstrap planning", () => {
       name: "demo-service"
     }, null, 2));
     writeFileSync(path.join(repoRoot, "bin", "demo.js"), "#!/usr/bin/env node\n");
-    writeFileSync(
-      path.join(repoRoot, "src", "cli", "flags.ts"),
-      "export const flags = ['--mode', '--verbose'];\n"
-    );
-    writeFileSync(
-      path.join(repoRoot, "src", "server.ts"),
-      "app.get('/health', handler);\nconst port = process.env.PORT;\n"
-    );
-    writeFileSync(path.join(repoRoot, ".env.example"), "PORT=3000\n");
+    writeFileSync(path.join(repoRoot, "src", "cli", "flags.ts"), "export const flags = ['--mode'];\n");
+    writeFileSync(path.join(repoRoot, "src", "server.ts"), "app.get('/health', handler);\n");
     spawnSync("git", ["add", "."], {
       cwd: repoRoot,
       stdio: "ignore"
@@ -120,10 +119,10 @@ describe("bootstrap planning", () => {
     });
     const brightBuildsScript = writeBrightBuildsStub(tempDir);
     const gsdInstaller = writeGsdInstaller(tempDir);
-    const executor = writeExecutor(tempDir);
+    const executor = writeFlakyExecutor(tempDir);
 
     // Act
-    const result = spawnSync(
+    const firstRun = spawnSync(
       process.execPath,
       [path.join(workspaceRoot, "bin", "yolo-port.js"), "bootstrap", "--mode", "yolo", "--yes"],
       {
@@ -139,31 +138,40 @@ describe("bootstrap planning", () => {
         }
       }
     );
+    const stateAfterFirstRun = readFileSync(
+      path.join(repoRoot, ".planning", "yolo-port", "execution-state.json"),
+      "utf8"
+    );
+    const secondRun = spawnSync(
+      process.execPath,
+      [path.join(workspaceRoot, "bin", "yolo-port.js"), "resume", "--yes"],
+      {
+        cwd: repoRoot,
+        encoding: "utf8",
+        env: {
+          ...process.env,
+          CODEX_HOME: codexHome,
+          PATH: `${path.dirname(process.execPath)}:${process.env.PATH ?? "/usr/bin:/bin"}`,
+          YOLO_PORT_BRIGHT_BUILDS_SCRIPT: brightBuildsScript,
+          YOLO_PORT_GSD_EXECUTOR: executor,
+          YOLO_PORT_GSD_INSTALLER: gsdInstaller
+        }
+      }
+    );
 
     // Assert
-    expect(result.status).toBe(0);
-    expect(result.stdout).toContain("yolo-port ► Plan Preview");
-    expect(result.stdout).toContain("Pricing snapshot:");
-    const parityChecklist = readFileSync(
-      path.join(repoRoot, ".planning", "yolo-port", "parity-checklist.md"),
-      "utf8"
-    );
-    const portPlan = readFileSync(
-      path.join(repoRoot, ".planning", "yolo-port", "port-plan.md"),
-      "utf8"
-    );
-    const sourceReference = readFileSync(
-      path.join(repoRoot, ".planning", "yolo-port", "source-reference.json"),
-      "utf8"
-    );
-    expect(parityChecklist).toContain("GET /health");
-    expect(parityChecklist).toContain("PORT");
-    expect(portPlan).toContain("Selected model:");
-    expect(portPlan).toContain("Proceed Gate");
-    expect(sourceReference).toContain("yolo-port/source-reference");
+    expect(firstRun.status).toBe(1);
+    expect(stateAfterFirstRun).toContain("\"status\": \"failed\"");
+    expect(secondRun.status).toBe(0);
+    expect(
+      readFileSync(path.join(repoRoot, ".planning", "yolo-port", "execution-state.json"), "utf8")
+    ).toContain("\"status\": \"completed\"");
     expect(
       readFileSync(path.join(repoRoot, ".planning", "yolo-port", "execution-summary.md"), "utf8")
     ).toContain("Managed execution completed");
+    expect(
+      readFileSync(path.join(repoRoot, ".planning", "yolo-port", "executor-marker.txt"), "utf8")
+    ).toContain("runner success");
 
     // Cleanup
     rmSync(tempDir, { force: true, recursive: true });

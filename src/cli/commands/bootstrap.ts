@@ -2,6 +2,7 @@ import process from "node:process";
 
 import { readIntakeProfile, writeIntakeProfile } from "../../adapters/fs/intakeProfile.js";
 import { readManagedRepoState } from "../../adapters/fs/managedRepo.js";
+import { readManagedExecutionState } from "../../adapters/fs/executionState.js";
 import { detectBun } from "../../adapters/system/bun.js";
 import { readBrightBuildsStatus } from "../../adapters/system/brightBuilds.js";
 import { detectGsd } from "../../adapters/system/gsd.js";
@@ -17,6 +18,7 @@ import {
   renderSavedPreferenceSummary
 } from "../../ui/bootstrap.js";
 import { renderRepoClassification } from "../../ui/classification.js";
+import { renderManagedExecutionStatus } from "../../ui/execution.js";
 import { renderPlanningPreview } from "../../ui/planning.js";
 import { writeSectionBanner } from "../../ui/progress.js";
 import { renderBootstrapSummary } from "../../ui/summary.js";
@@ -30,10 +32,12 @@ import {
   confirmDetectedRepoState,
   confirmExecution,
   confirmPlanningApproval,
+  confirmResumeExecution,
   resolveMode
 } from "../bootstrap/interaction.js";
 import { resolveBootstrapTarget } from "../bootstrap/target.js";
 import { parseBootstrapArgs } from "../flags.js";
+import { resumeManagedExecution } from "../resume/run.js";
 import type { CommandDefinition } from "../router.js";
 
 function writeLines(output: NodeJS.WriteStream, lines: string[]): void {
@@ -80,6 +84,12 @@ export function createBootstrapCommand(): CommandDefinition {
           : classifyRepoState({
               managedState
             });
+      const executionState =
+        resolvedTarget.kind === "local"
+          ? await readManagedExecutionState({
+              repoRoot: resolvedTarget.repoRoot
+            })
+          : null;
 
       writeSectionBanner(context.stdout, "yolo-port ► Checks");
       context.stdout.write(
@@ -113,6 +123,41 @@ export function createBootstrapCommand(): CommandDefinition {
       ) {
         writeLines(context.stdout, renderDirtyRepositoryRecovery(resolvedTarget.inspection));
         return 1;
+      }
+
+      if (
+        resolvedTarget.kind === "local" &&
+        executionState !== null &&
+        executionState.status !== "completed"
+      ) {
+        writeSectionBanner(context.stdout, "yolo-port ► Resume");
+        writeLines(context.stdout, renderManagedExecutionStatus({
+          state: executionState
+        }));
+        const shouldAutoResume =
+          flags.assumeYes ||
+          flags.maybeMode === "yolo" ||
+          savedProfile?.mode === "yolo";
+        const shouldResume =
+          shouldAutoResume ||
+          (await confirmResumeExecution({
+            io: {
+              input: process.stdin,
+              output: context.stdout
+            },
+            stepLabel: executionState.currentStep ?? "the next checkpoint"
+          }));
+
+        if (shouldResume) {
+          const resumeOutcome = await resumeManagedExecution({
+            io: {
+              output: context.stdout
+            },
+            repoRoot: resolvedTarget.repoRoot
+          });
+
+          return resumeOutcome.exitCode;
+        }
       }
 
       if (classification?.needsConfirmation) {
@@ -289,9 +334,34 @@ export function createBootstrapCommand(): CommandDefinition {
         maybeTargetStack: resolvedPreferences.maybeTargetStack,
         repoRoot: executionOutcome.result.repoRoot
       });
-      const filesWritten = Array.from(
+      let filesWritten = Array.from(
         new Set([...executionOutcome.result.filesWritten, ...planningFiles])
       );
+      let nextStepsLine = planningApproved
+        ? "Next steps: run yolo-port resume to start managed execution."
+        : "Next steps: review the parity plan artifacts and approve the saved plan before later execution.";
+      let executionToolLine = "Managed execution ready";
+
+      if (planningApproved && mode === "yolo") {
+        writeSectionBanner(context.stdout, "yolo-port ► Managed Execution");
+        const resumeOutcome = await resumeManagedExecution({
+          io: {
+            output: context.stdout
+          },
+          repoRoot: executionOutcome.result.repoRoot
+        });
+        filesWritten = Array.from(
+          new Set([...filesWritten, ...resumeOutcome.filesWritten])
+        );
+
+        if (resumeOutcome.exitCode !== 0) {
+          return resumeOutcome.exitCode;
+        }
+
+        nextStepsLine =
+          "Next steps: review the managed execution summary and continue with audit/reporting work.";
+        executionToolLine = "Managed execution completed";
+      }
 
       writeSectionBanner(context.stdout, "yolo-port ► Complete");
       writeLines(
@@ -300,16 +370,15 @@ export function createBootstrapCommand(): CommandDefinition {
           filesWritten,
           mode,
           nextCommand: "yolo-port",
-          nextStepsLine: planningApproved
-            ? "Next steps: review the parity plan artifacts, then continue once execution handoff lands."
-            : "Next steps: review the parity plan artifacts and approve the saved plan before later execution.",
+          nextStepsLine,
           preferenceLines: renderResolvedPreferenceSummary(resolvedPreferences),
           repoState: executionOutcome.result.brightBuildsStatus.repoState,
           toolLines: [
             `Bun ${bunState.version ?? "available"}`,
             `Bright Builds ${executionOutcome.result.brightBuildsStatus.repoState}`,
             `get-shit-done action ${executionOutcome.result.gsdResult.kind}`,
-            `Planning ${planningDraft.estimate.selectedProvider}/${planningDraft.estimate.selectedModel}`
+            `Planning ${planningDraft.estimate.selectedProvider}/${planningDraft.estimate.selectedModel}`,
+            executionToolLine
           ],
           warnings: gsdState.reasons
         })

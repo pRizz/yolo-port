@@ -64,6 +64,20 @@ printf '2026.03.22\n' > "$CODEX_HOME/get-shit-done/VERSION"
   return scriptPath;
 }
 
+function writeExecutor(tempDir: string): string {
+  const scriptPath = path.join(tempDir, "executor.sh");
+  const script = `#!/usr/bin/env bash
+set -euo pipefail
+repo_root="$1"
+mkdir -p "$repo_root/.planning/yolo-port"
+printf 'runner success\\n' > "$repo_root/.planning/yolo-port/executor-marker.txt"
+printf 'runner success\\n'
+`;
+  writeFileSync(scriptPath, script);
+  chmodSync(scriptPath, 0o755);
+  return scriptPath;
+}
+
 describe("bootstrap managed repo", () => {
   test("bootstraps an installable repo and creates managed planning state", () => {
     // Arrange
@@ -74,6 +88,7 @@ describe("bootstrap managed repo", () => {
     mkdirSync(repoRoot, { recursive: true });
     const brightBuildsScript = writeBrightBuildsStub(tempDir);
     const gsdInstaller = writeGsdInstaller(tempDir);
+    const executor = writeExecutor(tempDir);
 
     // Act
     const result = spawnSync(
@@ -87,6 +102,7 @@ describe("bootstrap managed repo", () => {
           CODEX_HOME: codexHome,
           PATH: `${path.dirname(process.execPath)}:${process.env.PATH ?? "/usr/bin:/bin"}`,
           YOLO_PORT_BRIGHT_BUILDS_SCRIPT: brightBuildsScript,
+          YOLO_PORT_GSD_EXECUTOR: executor,
           YOLO_PORT_GSD_INSTALLER: gsdInstaller
         }
       }
@@ -96,6 +112,7 @@ describe("bootstrap managed repo", () => {
     expect(result.status).toBe(0);
     expect(readFileSync(path.join(repoRoot, ".planning", "yolo-port", "manifest.json"), "utf8")).toContain("\"manager\": \"yolo-port\"");
     expect(readFileSync(path.join(repoRoot, ".planning", "yolo-port", "port-plan.md"), "utf8")).toContain("Proceed Gate");
+    expect(readFileSync(path.join(repoRoot, ".planning", "yolo-port", "execution-summary.md"), "utf8")).toContain("Managed execution completed");
 
     // Cleanup
     rmSync(tempDir, { force: true, recursive: true });

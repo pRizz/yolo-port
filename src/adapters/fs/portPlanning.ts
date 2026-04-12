@@ -6,10 +6,15 @@ import {
   type InterfaceInventoryRecord,
   type ParityChecklistItem,
   type PlanningApprovalRecord,
+  type PortPlanRecord,
   type PortPlanEstimateRecord,
   type SourceReferenceRecord
 } from "../../persistence/portPlanning.js";
-import { DEFAULT_PRICING_SNAPSHOT, type ModelProfile } from "../../persistence/pricingCatalog.js";
+import {
+  DEFAULT_PRICING_SNAPSHOT,
+  type ModelProfile,
+  type PricingSnapshotRecord
+} from "../../persistence/pricingCatalog.js";
 import {
   renderParityChecklistMarkdown,
   renderPortPlanMarkdown
@@ -29,7 +34,7 @@ function artifactDirectory(repoRoot: string): string {
   return path.join(repoRoot, ".planning", "yolo-port");
 }
 
-function planningFiles(repoRoot: string): PlanningFileSet {
+export function planningFiles(repoRoot: string): PlanningFileSet {
   const root = artifactDirectory(repoRoot);
 
   return {
@@ -82,6 +87,26 @@ export async function readPlanningConfig(options: {
 
   return {
     maybeModelProfile: null
+  };
+}
+
+export async function readPortPlanningArtifacts(options: {
+  repoRoot: string;
+}): Promise<{
+  interfaceInventory: InterfaceInventoryRecord | null;
+  planApproval: PlanningApprovalRecord | null;
+  portPlan: PortPlanRecord | null;
+  pricingSnapshot: PricingSnapshotRecord | null;
+  sourceReference: SourceReferenceRecord | null;
+}> {
+  const files = planningFiles(options.repoRoot);
+
+  return {
+    interfaceInventory: await readJsonFile<InterfaceInventoryRecord>(files.interfaceInventory),
+    planApproval: await readJsonFile<PlanningApprovalRecord>(files.planApproval),
+    portPlan: await readJsonFile<PortPlanRecord>(files.portPlanJson),
+    pricingSnapshot: await readJsonFile<PricingSnapshotRecord>(files.pricingSnapshot),
+    sourceReference: await readJsonFile<SourceReferenceRecord>(files.sourceReference)
   };
 }
 

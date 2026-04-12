@@ -21,6 +21,7 @@ BUN_DIR="$(dirname "$(command -v bun)")"
 
 BRIGHT_BUILDS_SCRIPT="${TEMP_DIR}/bright-builds-stub.sh"
 GSD_INSTALLER="${TEMP_DIR}/install-gsd.sh"
+EXECUTOR_SCRIPT="${TEMP_DIR}/executor.sh"
 
 cat >"${BRIGHT_BUILDS_SCRIPT}" <<EOF
 #!/usr/bin/env bash
@@ -86,6 +87,16 @@ printf '2026.03.22\n' > "${CODEX_HOME}/get-shit-done/VERSION"
 EOF
 chmod +x "${GSD_INSTALLER}"
 
+cat >"${EXECUTOR_SCRIPT}" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+repo_root="$1"
+mkdir -p "${repo_root}/.planning/yolo-port"
+printf 'runner success\n' > "${repo_root}/.planning/yolo-port/executor-marker.txt"
+printf 'runner success\n'
+EOF
+chmod +x "${EXECUTOR_SCRIPT}"
+
 run_bootstrap() {
   local repo_root="$1"
   local codex_home="$2"
@@ -98,6 +109,7 @@ run_bootstrap() {
     CODEX_HOME="${codex_home}" \
       PATH="${NODE_DIR}:${BUN_DIR}:${PATH}" \
       YOLO_PORT_BRIGHT_BUILDS_SCRIPT="${BRIGHT_BUILDS_SCRIPT}" \
+      YOLO_PORT_GSD_EXECUTOR="${EXECUTOR_SCRIPT}" \
       YOLO_PORT_GSD_INSTALLER="${GSD_INSTALLER}" \
       node "${REPO_ROOT}/bin/yolo-port.js" bootstrap --mode yolo --yes "$@" \
       >"${stdout_path}" 2>"${stderr_path}"
@@ -114,6 +126,7 @@ run_bootstrap "${INSTALLABLE_REPO}" "${INSTALLABLE_CODEX}" "${INSTALLABLE_STDOUT
 grep -q '"manager": "yolo-port"' "${INSTALLABLE_REPO}/.planning/yolo-port/manifest.json"
 grep -q 'ok' "${INSTALLABLE_REPO}/.bright-builds/installed.txt"
 grep -q '2026.03.22' "${INSTALLABLE_CODEX}/get-shit-done/VERSION"
+grep -q 'Managed execution completed' "${INSTALLABLE_REPO}/.planning/yolo-port/execution-summary.md"
 
 printf 'blocked' >"${TEMP_DIR}/bright-builds-state.txt"
 BLOCKED_REPO="${TEMP_DIR}/blocked-repo"

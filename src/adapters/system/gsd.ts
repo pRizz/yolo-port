@@ -3,7 +3,9 @@ import os from "node:os";
 import path from "node:path";
 import { spawn } from "node:child_process";
 
+import type { BootstrapMode } from "../../domain/bootstrap/types.js";
 import type { GsdToolState } from "../../domain/bootstrap/types.js";
+import type { ManagedExecutionRunner } from "../../persistence/executionState.js";
 
 export type PlannedGsdAction = {
   kind: "install" | "none" | "update" | "verify";
@@ -13,6 +15,11 @@ export type PlannedGsdAction = {
 export type GsdActionResult = {
   kind: PlannedGsdAction["kind"];
   output: string;
+};
+
+export type ManagedExecutionResult = {
+  output: string;
+  runner: ManagedExecutionRunner;
 };
 
 function resolveCodexHome(env: NodeJS.ProcessEnv): string {
@@ -98,14 +105,23 @@ export function planGsdAction(detection: GsdToolState): PlannedGsdAction {
 async function runProcess(
   file: string,
   args: string[],
-  env: NodeJS.ProcessEnv
+  env: NodeJS.ProcessEnv,
+  options: {
+    cwd?: string;
+    input?: string;
+  } = {}
 ): Promise<{ code: number; output: string }> {
   const child = spawn(file, args, {
+    cwd: options.cwd,
     env,
-    stdio: ["ignore", "pipe", "pipe"]
+    stdio: ["pipe", "pipe", "pipe"]
   });
 
   let output = "";
+  if (options.input) {
+    child.stdin.write(options.input);
+  }
+  child.stdin.end();
   child.stdout.on("data", (chunk) => {
     output += chunk.toString();
   });
@@ -193,5 +209,66 @@ export async function runGsdAction(options: {
   return {
     kind: "update",
     output: result.output
+  };
+}
+
+export async function runManagedExecution(options: {
+  env?: NodeJS.ProcessEnv;
+  mode: BootstrapMode;
+  prompt: string;
+  promptPath: string;
+  repoRoot: string;
+}): Promise<ManagedExecutionResult> {
+  const env = options.env ?? process.env;
+
+  if (env.YOLO_PORT_GSD_EXECUTOR) {
+    const result = await runProcess(
+      env.YOLO_PORT_GSD_EXECUTOR,
+      [options.repoRoot, options.promptPath, options.mode],
+      {
+        ...env,
+        YOLO_PORT_EXEC_MODE: options.mode,
+        YOLO_PORT_EXEC_PROMPT_PATH: options.promptPath,
+        YOLO_PORT_EXEC_REPO_ROOT: options.repoRoot
+      },
+      {
+        cwd: options.repoRoot
+      }
+    );
+
+    if (result.code !== 0) {
+      throw new Error(result.output.trim() || "Configured managed execution runner failed.");
+    }
+
+    return {
+      output: result.output,
+      runner: "configured-script"
+    };
+  }
+
+  const result = await runProcess(
+    "codex",
+    [
+      "exec",
+      "--full-auto",
+      "--skip-git-repo-check",
+      "-C",
+      options.repoRoot,
+      "-"
+    ],
+    env,
+    {
+      cwd: options.repoRoot,
+      input: options.prompt
+    }
+  );
+
+  if (result.code !== 0) {
+    throw new Error(result.output.trim() || "Codex managed execution failed.");
+  }
+
+  return {
+    output: result.output,
+    runner: "codex-exec"
   };
 }

@@ -34,10 +34,10 @@
 ### Execution and Recovery
 
 - [x] **EXEC-01**: User can bootstrap the `.planning` artifacts needed for a yolo-port managed port workflow.
-- [ ] **EXEC-02**: User can trigger a GSD-compatible execution flow after bootstrap instead of manually translating the plan into downstream GSD steps.
-- [ ] **EXEC-03**: User can rely on write-ahead and write-after checkpoint logging for each major workflow step.
-- [ ] **EXEC-04**: User can resume an interrupted run from the last reliable checkpoint after rerunning `yolo-port`.
-- [ ] **EXEC-05**: User can run a YOLO workflow that continues through cloning, analysis, planning, code generation, verification, and commits without further prompts after initial confirmation.
+- [x] **EXEC-02**: User can trigger a GSD-compatible execution flow after bootstrap instead of manually translating the plan into downstream GSD steps.
+- [x] **EXEC-03**: User can rely on write-ahead and write-after checkpoint logging for each major workflow step.
+- [x] **EXEC-04**: User can resume an interrupted run from the last reliable checkpoint after rerunning `yolo-port`.
+- [x] **EXEC-05**: User can run a YOLO workflow that continues through cloning, analysis, planning, code generation, verification, and commits without further prompts after initial confirmation.
 
 ### Audit and Reporting
 
@@ -89,10 +89,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PLAN-03 | Phase 3 | Complete |
 | PLAN-04 | Phase 3 | Complete |
 | EXEC-01 | Phase 1 | Complete |
-| EXEC-02 | Phase 4 | Pending |
-| EXEC-03 | Phase 4 | Pending |
-| EXEC-04 | Phase 4 | Pending |
-| EXEC-05 | Phase 4 | Pending |
+| EXEC-02 | Phase 4 | Complete |
+| EXEC-03 | Phase 4 | Complete |
+| EXEC-04 | Phase 4 | Complete |
+| EXEC-05 | Phase 4 | Complete |
 | AUDT-01 | Phase 5 | Pending |
 | RPRT-01 | Phase 5 | Pending |
 
@@ -103,4 +103,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-03-22*
-*Last updated: 2026-04-11 after Phase 3 completion*
+*Last updated: 2026-04-12 after Phase 4 completion*
