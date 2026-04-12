@@ -10,6 +10,7 @@ import {
   createSourceReferenceRecord,
   type SourceReferenceRecord
 } from "../../persistence/portPlanning.js";
+import type { GitDiffStatsRecord } from "../../persistence/reporting.js";
 import type { RepositorySnapshot } from "../fs/repositorySnapshot.js";
 
 type ProcessResult = {
@@ -329,4 +330,61 @@ export async function preserveGitSourceReference(options: {
       targetStack: options.maybeTargetStack
     }
   });
+}
+
+export async function readGitDiffStats(options: {
+  baseRef: string | null;
+  repoRoot: string;
+}): Promise<GitDiffStatsRecord | null> {
+  if (!options.baseRef) {
+    return null;
+  }
+
+  const repoCheck = await runProcess("git", ["rev-parse", "--show-toplevel"], {
+    cwd: options.repoRoot
+  });
+  if (repoCheck.code !== 0) {
+    return null;
+  }
+
+  const baseCheck = await runProcess("git", ["rev-parse", "--verify", options.baseRef], {
+    cwd: options.repoRoot
+  });
+  if (baseCheck.code !== 0) {
+    return null;
+  }
+
+  const diff = await runProcess(
+    "git",
+    ["diff", "--numstat", `${options.baseRef}..HEAD`],
+    {
+      cwd: options.repoRoot
+    }
+  );
+
+  if (diff.code !== 0) {
+    return null;
+  }
+
+  let additions = 0;
+  let deletions = 0;
+  let filesChanged = 0;
+
+  for (const line of diff.output.split("\n").map((entry) => entry.trim()).filter(Boolean)) {
+    const [maybeAdditions, maybeDeletions] = line.split("\t");
+    if (!maybeAdditions || !maybeDeletions) {
+      continue;
+    }
+
+    filesChanged += 1;
+    additions += maybeAdditions === "-" ? 0 : Number.parseInt(maybeAdditions, 10);
+    deletions += maybeDeletions === "-" ? 0 : Number.parseInt(maybeDeletions, 10);
+  }
+
+  return {
+    additions,
+    baseRef: options.baseRef,
+    deletions,
+    filesChanged
+  };
 }

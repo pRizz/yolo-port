@@ -4,7 +4,7 @@ import type { RepoClassificationAction, RepoClassificationResult } from "../doma
 function renderActionLabel(action: RepoClassificationAction): string {
   switch (action) {
     case "audit-parity":
-      return "Audit parity against source (planned)";
+      return "Audit parity against source";
     case "continue-bootstrap":
       return "Continue managed bootstrap";
     case "inspect-managed-state":

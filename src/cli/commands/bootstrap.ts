@@ -178,7 +178,7 @@ export function createBootstrapCommand(): CommandDefinition {
 
       if (classification?.state === "already-ported") {
         context.stdout.write(
-          "This repository already looks ported. The actions above are the current next steps for this state.\n"
+          "This repository already looks ported. Run `yolo-port audit` to refresh parity and final-report artifacts.\n"
         );
         return 0;
       }

@@ -1,3 +1,4 @@
+import { createAuditCommand } from "./commands/audit.js";
 import { createBootstrapCommand } from "./commands/bootstrap.js";
 import { createResumeCommand } from "./commands/resume.js";
 
@@ -33,7 +34,7 @@ export function buildCommandRegistry(): CommandDefinition[] {
   return [
     createBootstrapCommand(),
     createResumeCommand(),
-    createPlannedCommand("audit", "Audit an existing port for parity"),
+    createAuditCommand(),
     createPlannedCommand("doctor", "Inspect environment and dependency readiness")
   ];
 }

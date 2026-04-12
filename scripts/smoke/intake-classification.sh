@@ -97,6 +97,7 @@ ported_output="$(run_artifact_path "ported-output.txt")"
 
 grep -q "Detected state: already-ported" "$ported_output"
 grep -q "1. View previous run summary" "$ported_output"
+grep -q "2. Audit parity against source" "$ported_output"
 
 append_run_summary_line "verified in-progress classification output at ${progress_output}"
 append_run_summary_line "verified already-ported classification output at ${ported_output}"

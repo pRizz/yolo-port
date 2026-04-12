@@ -204,7 +204,7 @@ describe("intake classification", () => {
     expect(result.status).toBe(0);
     expect(result.stdout).toContain("Detected state: already-ported");
     expect(result.stdout).toContain("1. View previous run summary");
-    expect(result.stdout).toContain("2. Audit parity against source (planned)");
+    expect(result.stdout).toContain("2. Audit parity against source");
     expect(result.stdout).toContain("3. Update the port from upstream (planned)");
     expect(result.stdout).toContain("4. Inspect managed artifacts/state");
 

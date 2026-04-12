@@ -91,7 +91,13 @@ export async function readManagedRepoState(options: {
     finalReportPaths,
     manifest,
     parityArtifactPaths,
-    recentSummaryPaths: planningFiles.filter((filePath) => filePath.endsWith("-SUMMARY.md")),
+    recentSummaryPaths: [
+      ...finalReportPaths,
+      ...yoloPortFiles.filter((filePath) =>
+        /execution-summary/i.test(path.basename(filePath))
+      ),
+      ...planningFiles.filter((filePath) => filePath.endsWith("-SUMMARY.md"))
+    ],
     sourceReferencePaths,
     yoloPortDir: (await exists(yoloPortDir)) ? yoloPortDir : null
   };

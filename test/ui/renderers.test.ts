@@ -125,6 +125,28 @@ describe("shared ui renderers", () => {
     ]);
   });
 
+  test("renderRepoClassification shows the real audit label for already-ported repos", () => {
+    // Arrange
+    const managedState = createManagedState({
+      recentSummaryPaths: [".planning/yolo-port/final-report.md"]
+    });
+    const result = createClassification({
+      actions: ["view-previous-summary", "audit-parity"],
+      recommendedState: "already-ported",
+      state: "already-ported"
+    });
+
+    // Act
+    const lines = renderRepoClassification({
+      managedState,
+      result
+    });
+
+    // Assert
+    expect(lines).toContain("2. Audit parity against source");
+    expect(lines).toContain("Latest summary: .planning/yolo-port/final-report.md");
+  });
+
   test("renderBrightBuildsBlockedRecovery reports blockers and recovery guidance", () => {
     // Arrange
     const status = createBrightBuildsStatus({

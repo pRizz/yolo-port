@@ -12,7 +12,8 @@ import { spawnSync } from "node:child_process";
 
 import {
   inspectLocalRepository,
-  inspectRemoteRepository
+  inspectRemoteRepository,
+  readGitDiffStats
 } from "../../src/adapters/system/git.js";
 
 describe("inspectLocalRepository", () => {
@@ -96,6 +97,60 @@ describe("inspectRemoteRepository", () => {
     expect(inspection.repoName).toBe("origin");
     expect(inspection.cloneDestination).toBe(path.join(tempDir, "origin"));
     expect(inspection.existingPathKind).toBe("missing");
+
+    // Cleanup
+    rmSync(tempDir, { force: true, recursive: true });
+  });
+});
+
+describe("readGitDiffStats", () => {
+  test("returns diff stats against a valid base ref", async () => {
+    // Arrange
+    const tempDir = mkdtempSync(path.join(os.tmpdir(), "yolo-port-git-diff-"));
+    spawnSync("git", ["init"], {
+      cwd: tempDir,
+      stdio: "ignore"
+    });
+    spawnSync("git", ["config", "user.name", "Test"], {
+      cwd: tempDir,
+      stdio: "ignore"
+    });
+    spawnSync("git", ["config", "user.email", "test@example.com"], {
+      cwd: tempDir,
+      stdio: "ignore"
+    });
+    writeFileSync(path.join(tempDir, "file.txt"), "before\n");
+    spawnSync("git", ["add", "file.txt"], {
+      cwd: tempDir,
+      stdio: "ignore"
+    });
+    spawnSync("git", ["commit", "-m", "init"], {
+      cwd: tempDir,
+      stdio: "ignore"
+    });
+    spawnSync("git", ["tag", "base"], {
+      cwd: tempDir,
+      stdio: "ignore"
+    });
+    writeFileSync(path.join(tempDir, "file.txt"), "before\nafter\n");
+    spawnSync("git", ["add", "file.txt"], {
+      cwd: tempDir,
+      stdio: "ignore"
+    });
+    spawnSync("git", ["commit", "-m", "change"], {
+      cwd: tempDir,
+      stdio: "ignore"
+    });
+
+    // Act
+    const stats = await readGitDiffStats({
+      baseRef: "refs/tags/base",
+      repoRoot: tempDir
+    });
+
+    // Assert
+    expect(stats?.filesChanged).toBe(1);
+    expect((stats?.additions ?? 0) > 0).toBeTruthy();
 
     // Cleanup
     rmSync(tempDir, { force: true, recursive: true });

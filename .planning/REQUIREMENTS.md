@@ -41,8 +41,8 @@
 
 ### Audit and Reporting
 
-- [ ] **AUDT-01**: User can audit an already ported codebase for parity against the original source repository.
-- [ ] **RPRT-01**: User can receive a final summary report that includes parity status, flagged exceptions, estimate-versus-actual execution data, unresolved risks, and next steps.
+- [x] **AUDT-01**: User can audit an already ported codebase for parity against the original source repository.
+- [x] **RPRT-01**: User can receive a final summary report that includes parity status, flagged exceptions, estimate-versus-actual execution data, unresolved risks, and next steps.
 
 ## v2 Requirements
 
@@ -93,8 +93,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | EXEC-03 | Phase 4 | Complete |
 | EXEC-04 | Phase 4 | Complete |
 | EXEC-05 | Phase 4 | Complete |
-| AUDT-01 | Phase 5 | Pending |
-| RPRT-01 | Phase 5 | Pending |
+| AUDT-01 | Phase 5 | Complete |
+| RPRT-01 | Phase 5 | Complete |
 
 **Coverage:**
 - v1 requirements: 21 total
@@ -103,4 +103,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-03-22*
-*Last updated: 2026-04-12 after Phase 4 completion*
+*Last updated: 2026-04-12 after Phase 5 completion*
